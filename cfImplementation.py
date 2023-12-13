@@ -14,7 +14,7 @@ import os
 import multiprocessing as mp
 # from execute_v2 import park_events_FCFS,runtime_FCFS
 from seq_arrival_new import seq_curb
-#This function creates a new instance of a Gurboi model with the name specified by the "name" argument
+#This function creates a new instance of a Gurobi model with the name specified by the "name" argument
 def createGurobiModel(name='smartCurb'):
     m = gp.Model(name)
     m.setParam('OutputFlag', 0)
@@ -182,6 +182,13 @@ def getExpectedCruisingExpression(data, x_i_j, scale=1):
     obj = gp.LinExpr()
     for i in range(0, len(data)):
         obj += (1 - x_i_j.sum(i + 1, '*')) * (data['Expected Cruising Time'].iloc[i] * data['Expected Cruising'].iloc[i] / scale)
+
+    return obj
+
+def getCruisingExpression(data, x_i_j, scale=1):
+    obj = gp.LinExpr()
+    for i in range(0, len(data)):
+        obj += (1 - x_i_j.sum(i + 1, '*')) * (data['Expected Cruising'].iloc[i] / scale)
 
     return obj
 
@@ -419,11 +426,11 @@ def runFullOptimization(data, numSpaces, buffer, weightDoubleParking, weightCrui
     # m = setModelParams(m, MIPGap=0.01, ModelSense=GRB.MINIMIZE, TimeLimit=numSeconds, Threads=1)
     m = setModelParams(m, MIPGap=0.0001, ModelSense=GRB.MINIMIZE, TimeLimit=numSeconds, Threads=1)
     doubleParkObj = getDoubleParkExpression(data, x_i_j)
-    cruisingObj = getExpectedCruisingExpression(data, x_i_j)
+    cruisingObj = getCruisingExpression(data, x_i_j)
     # absDifferenceObj = getAbsoluteDeviationExpression(data, t_i)
     # m = setModelObjective(m, cruisingObj)
     m = setModelObjectiveN(m, doubleParkObj, 0, 1, weightDoubleParking)
-    # m = setModelObjectiveN(m, cruisingObj, 1, 1, weightCruising)
+    m = setModelObjectiveN(m, cruisingObj, 1, 1, weightCruising)
     # m, t_i, x_i_j, r_i, s_i = applyDeviationObjectiveVariables(m, t_i, x_i_j, data)
     t0 = m.status
     m.optimize()
@@ -502,9 +509,9 @@ def runSlidingOptimization(data, numSpaces, zeta=5, start=0, stop=(24*60)+1, buf
             m, t_i, x_i_j = createTimeShiftConstraints(m, t_i, x_i_j, tempData)
             m = setModelParams(m, TimeLimit=timeLimit, MIPGap=0.01, ModelSense=GRB.MINIMIZE, Threads=1)
             doubleParkObj = getDoubleParkExpression(tempData, x_i_j)
-            # cruisingObj = getExpectedCruisingExpression(tempData, x_i_j) #Aaron changed data to tempData
+            cruisingObj = getExpectedCruisingExpression(tempData, x_i_j) #Aaron changed data to tempData
             m = setModelObjectiveN(m, doubleParkObj, 0, 1, weightDoubleParking)
-            # m = setModelObjectiveN(m, cruisingObj, 1, 1, weightCruising)
+            m = setModelObjectiveN(m, cruisingObj, 1, 1, weightCruising)
             m, t_i, x_i_j = applyDeviationObjectiveVariables(m, t_i, x_i_j, tempData)
 
 
@@ -517,7 +524,7 @@ def runSlidingOptimization(data, numSpaces, zeta=5, start=0, stop=(24*60)+1, buf
                 print(stop)
                 print('{} Termination Code for Run {}'.format(m.status, saveID))
                 # printFullModel(m)
-                m.write('debug/debug-{}.lp'.format(saveID))
+                m.write('debug/debug-{}-{}.lp'.format(saveID, m.status))
                 
                 # print("The model is infeasible; computing IIS")
                 # m.computeIIS()
@@ -676,7 +683,7 @@ def collateTimeWindowOutcomes(outcomeList):
     return outcomeList, r
 
 
-def simulateData(numCars, numTrucks, nhts_data, windowShift=10, receivedDelta=120):
+def simulateData(numCars, numTrucks, nhts_data, windowShift=10, receivedDelta=30):
     data = nhts_data
     r = OrderedDict()
     if(numCars==0):
@@ -692,6 +699,7 @@ def simulateData(numCars, numTrucks, nhts_data, windowShift=10, receivedDelta=12
         truck = gen_truck_arrivals(numTrucks)  # Change the number of trucks simulated
 
     jointData = join_requests(t, truck, receivedDelta=receivedDelta)
+    jointData.loc[:, 'Received_OG'] = jointData.loc[:, 'Received']
     jointData.loc[:, 'b_i_OG'] = jointData.loc[:, 'a_i_OG'] + windowShift  # Change window for sliding
     jointData = jointData.drop(['Start Time', 'End Time', 'Travel Time', 'Mode', 'Dwell Time', 'Trip Distance', 'Destination Reason', 'Urban Size', 'Weight', 'p'], axis=1)
     jointData = jointData.sort_values('Received')
@@ -771,7 +779,6 @@ def runFullSetOfResults(numSpots, data, buffer, zeta, weightDoubleParking, weigh
     # fullZeta = max(fullData.loc[:, 'Received'])-min(fullData.loc[:, 'Received'])-1
     fullZeta = 20000
     fulltau = 20000 #Aaron added this
-    fullData.loc[:, 'Received_OG'] = fullData.loc[:, 'Received']
     fullData.loc[:, 'Received'] = -1
 
     # try:
@@ -817,37 +824,31 @@ def runFullSetOfResults(numSpots, data, buffer, zeta, weightDoubleParking, weigh
     except Exception as e:
         r['full-unassigned'] = e
 
+    # #ChatGPT generated code for more robust saving of results
+    # # Determine the current date and format it
+    current_date = date.today().strftime('%Y-%m-%d')
 
-    #saveFile = '/Users/connorforsythe/Library/CloudStorage/Box-Box/CMU/SmartCurbs/Results/2023-11-29/Res-{}.dat'.format(saveIndex)
-    saveFile = 'C:/Users/Aaron/Documents/GitHub/sliding_time_window_data/Aaron runs #3 (12 Dec 2023)/Res-{}.dat'.format(saveIndex)
-    
+    # Define the base path for saving files
+    if('connorforsythe' in os.getcwd()):
+        base_path = '/Users/connorforsythe/Library/CloudStorage/Box-Box/CMU/SmartCurbs/Results/'
+        current_date = 'Connor Result_'+current_date
+    else:
+        base_path = 'C:/Users/Aaron/Documents/GitHub/sliding_time_window_data/'
+        current_date = 'Aaron Result_' + current_date
+
+    # Create a folder with the formatted date if it doesn't exist
+    folder_path = os.path.join(base_path, current_date)
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+
+    # Define the file path for saving
+    saveFile = os.path.join(folder_path, f'Res-{saveIndex}.dat')
+
     try:
         with open(saveFile, 'wb') as file:
             pickle.dump(r, file)
-            file.close()
     except TypeError as e:
         print(e)
-
-    # #ChatGPT generated code for more robust saving
-    # # Determine the current date and format it
-    # current_date = date.today().strftime('%Y-%m-%d')
-
-    # # Define the base path for saving files
-    # base_path = '/Users/connorforsythe/Library/CloudStorage/Box-Box/CMU/SmartCurbs/Results/'
-
-    # # Create a folder with the formatted date if it doesn't exist
-    # folder_path = os.path.join(base_path, current_date)
-    # if not os.path.exists(folder_path):
-    #     os.makedirs(folder_path)
-
-    # # Define the file path for saving
-    # saveFile = os.path.join(folder_path, f'Res-{saveIndex}.dat')
-
-    # try:
-    #     with open(saveFile, 'wb') as file:
-    #         pickle.dump(r, file)
-    # except TypeError as e:
-    #     print(e)
 
 
 
@@ -878,7 +879,6 @@ def runFullSetOfResultsQuick(numSpots, data, buffer, zeta, weightDoubleParking, 
     fullData = deepcopy(data)
     fullZeta = max(fullData.loc[:, 'Received']) - min(fullData.loc[:, 'Received']) - 1
     fullZeta = 20000
-    fullData.loc[:, 'Received_OG'] = fullData.loc[:, 'Received']
     fullData.loc[:, 'Received'] = -1
 
     try:

@@ -5,8 +5,13 @@ from execute_v2_cf import run_optimization, deepcopy
 from collections import OrderedDict
 import pickle
 from gen_veh_arrivals import gen_veh_arrivals as gen_truck_arrivals
+import os
 def load_raw_nhts_data(useCols=None):
-    file = 'C:/Users/Aaron/Documents/GitHub/sliding_time_window_data/Data/NHTS/csv/trippub.csv'
+    if('forsythe' in os.getcwd()):
+        file = '/Users/connorforsythe/Library/CloudStorage/Box-Box/CMU/Data/NHTS Data/2017-2022/trippub.csv'
+    else:
+        file = 'C:/Users/Aaron/Documents/GitHub/sliding_time_window_data/Data/NHTS/csv/trippub.csv'
+
     if(useCols==None):
         data = p.read_csv(file)
     else:
@@ -78,7 +83,6 @@ def construct_truth_dataframe(data, phi=10, b_shift=10, receivedDelta=30):
     data.loc[:, 'Received'] = data.loc[:, 'Start Time']
     data.loc[:, 'Received_OG'] = data.loc[:, 'Start Time']
     data.loc[:, 'Received-Diff'] = data.loc[:, 'End Time']-data.loc[:, 'Start Time']
-    data.loc[data.loc[:, 'Received-Diff']>receivedDelta, 'Received'] = data.loc[data.loc[:, 'Received-Diff']>receivedDelta, 'End Time']-receivedDelta
     data.loc[:, 'a_i_OG'] = data.loc[:, 'End Time']
     data.loc[:, 'b_i_OG'] = data.loc[:, 'a_i_OG']+b_shift
     data.loc[:, 's_i'] = data.loc[:, 'Dwell Time']
