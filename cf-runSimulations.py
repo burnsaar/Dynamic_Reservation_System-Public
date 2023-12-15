@@ -32,13 +32,13 @@ def gen_vehicles_and_parameters(replications, numSpots, truckProps, nhts_data,
                                 for zetaValue in zetaValues:
                                     #tempArg = (numSpot, tempData, bufferValue, zetaValue, doubleParkWeight, cruisingWeight, i, tauValue)
                                     tempArg = {'numSpot': numSpot, 
-                                                   'tempData': tempData, 
-                                                   'bufferValue': bufferValue, 
-                                                   'zetaValue': zetaValue, 
-                                                   'doubleParkWeight': doubleParkWeight, 
-                                                   'cruisingWeight': cruisingWeight, 
-                                                   'i': i, 
-                                                   'tauValue': tauValue}
+                                                    'tempData': tempData, 
+                                                    'bufferValue': bufferValue, 
+                                                    'zetaValue': zetaValue, 
+                                                    'doubleParkWeight': doubleParkWeight, 
+                                                    'cruisingWeight': cruisingWeight, 
+                                                    'i': i, 
+                                                    'tauValue': tauValue}
                                     
                                     if (numSpot == 1 and doubleParkWeight == 100 and numVehicles == 77):
                                         args.append(tempArg)
@@ -71,23 +71,23 @@ def apply_received_delta(data, received_delta):
 if __name__ == '__main__':
 
     #numSpots = [1, 2, 5, 10, 25]
-    numSpots = [1, 2, 10]
-    numSpots = [1]
+    numSpots = [1, 2, 5]
+    #numSpots = [1]
     # totalNumVehicles = list(range(11,78,11))
     # totalNumVehicles = [405]
     #doubleParkWeights = range(0, 101,25)
     doubleParkWeights = [100]
     bufferValues = [0]
     # bufferValues = [0]
-    tauValues = [5*60, 0]
+    tauValues = [30]
     #zetaValues = [1,5]
-    zetaValues = [5]
-    truckProps = [0]
+    zetaValues = [5, 10]
+    truckProps = [100]
     # tauValues = [5]
-    replications = 1 #added by Aaron
+    replications = 5 #added by Aaron
     windowShift = 10 #added by Aaron
-    rhoValues = [0, 60]
-    nuValues = [0, 60]
+    #rhoValues = [0, 30]
+    #nuValues = [0, 30]
     rhoValues = [0]
     nuValues = [0]
     receivedDeltas = [300, -1]# Aaron - this is the parameter that will enforce how early a request is received.
@@ -168,14 +168,14 @@ if __name__ == '__main__':
     # Connor's original code
 
     i = 0
-    reps = range(1)
+    reps = range(0,5)
     for rep in reps:
         for numSpot in numSpots:
             totalNumVehicles = list(range(11*numSpot, 34*numSpot, 11*numSpot))
 
             for numVehicles in totalNumVehicles:
                 for truckProp in truckProps:
-                    numTruck = int(np.round(truckProp*numVehicles))
+                    numTruck = int(np.round(truckProp/100*numVehicles))
                     numCar = numVehicles-numTruck
                     baseData = simulateData(min(max(numCar, 0), numVehicles), min(max(numTruck, 0), numVehicles), nhts_data)
                     args = []
@@ -192,7 +192,7 @@ if __name__ == '__main__':
 
                                                 # if i == 8:
                                                 #     print('i = ' + str(i))
-                                                runFullSetOfResults(*tempArg)
+                                                #runFullSetOfResults(*tempArg)
                                                 if (numSpot == 1 and doubleParkWeight == 100 and numVehicles == 77):
                                                     args.append(tempArg)
                                                 else:
@@ -201,10 +201,10 @@ if __name__ == '__main__':
                                                 i += 1
                                                 print(i)
 
-                        numThreads = mp.cpu_count()-2
-                        #numThreads = 4
-                        chunkSize = max(int(len(args)/numThreads), 1)
-                        np.random.shuffle(args)
-                        with Pool(numThreads) as pool:
-                            r = pool.starmap(runFullSetOfResults, args, chunksize=chunkSize)
-                            pool.close()
+                                        #numThreads = mp.cpu_count()-2
+                                        numThreads = 4
+                                        chunkSize = max(int(len(args)/numThreads), 1)
+                                        np.random.shuffle(args)
+                                        with Pool(numThreads) as pool:
+                                            r = pool.starmap(runFullSetOfResults, args, chunksize=chunkSize)
+                                            pool.close()

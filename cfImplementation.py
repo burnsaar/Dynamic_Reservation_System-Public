@@ -524,7 +524,7 @@ def runSlidingOptimization(data, numSpaces, zeta=5, start=0, stop=(24*60)+1, buf
                 print(stop)
                 print('{} Termination Code for Run {}'.format(m.status, saveID))
                 # printFullModel(m)
-                m.write('debug/debug-{}-{}.lp'.format(saveID, m.status))
+                m.write('debug/debug run-{}-status code-{}.lp'.format(saveID, m.status))
                 
                 # print("The model is infeasible; computing IIS")
                 # m.computeIIS()
@@ -803,7 +803,7 @@ def runFullSetOfResults(numSpots, data, buffer, zeta, weightDoubleParking, weigh
                                               timeLimit=30, tau=tau, returnBoth=True, saveID=saveIndex, rho=rho, nu=nu)
     t3 = datetime.now()
     r['spec'] = {'numSpots':numSpots, 'buffer':buffer, 'zeta':zeta, 'weightDoubleParking':weightDoubleParking, 'weightCruising':weightCruising,
-                 'tau':tau, 'numVehicles': len(data), 'rho': rho, 'nu': nu}
+                 'tau':tau, 'numVehicles': len(data), 'rho': rho, 'nu': nu, 'received_delta': data['received_delta'].iloc[0]}
 
     r['FCFS-time'] = t1-t0
     r['full-time'] = t2 - t1
