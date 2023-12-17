@@ -17,7 +17,7 @@ from seq_arrival_new import seq_curb
 #This function creates a new instance of a Gurobi model with the name specified by the "name" argument
 def createGurobiModel(name='smartCurb'):
     m = gp.Model(name)
-    m.setParam('OutputFlag', 0)
+    m.setParam('OutputFlag', 1)
     m.update()
     return m
 
@@ -463,7 +463,7 @@ def runSlidingOptimization(data, numSpaces, zeta=5, start=0, stop=(24*60)+1, buf
     pastInfo = None
     for j in iterVar:
         print(j)
-        if j == 820:  #850  #660 #720
+        if j >= 570:  #850  #660 #720
             print(stop)
 
         if (len(r) > 1):
@@ -472,7 +472,7 @@ def runSlidingOptimization(data, numSpaces, zeta=5, start=0, stop=(24*60)+1, buf
 
             if(pastInfo!=None):
                 pastInfos.append(pastInfo)
-                print(pastInfo)
+                #print(pastInfo)
                 indiciesToDrop.extend(pastInfo['indicesToDrop'])
         data = data.loc[~data.index.isin(indiciesToDrop), :]
         data.loc[:, 'a_i_OG-tau'] = data.loc[:, 'a_i_OG']-tau
@@ -826,15 +826,15 @@ def runFullSetOfResults(numSpots, data, buffer, zeta, weightDoubleParking, weigh
 
     # #ChatGPT generated code for more robust saving of results
     # # Determine the current date and format it
-    current_date = date.today().strftime('%Y-%m-%d')
+    current_date = date.today().strftime('%Y-%m-%d') 
 
     # Define the base path for saving files
     if('connorforsythe' in os.getcwd()):
         base_path = '/Users/connorforsythe/Library/CloudStorage/Box-Box/CMU/SmartCurbs/Results/'
-        current_date = 'Connor Result_'+current_date
+        current_date = current_date + '_Connor Result'
     else:
-        base_path = 'C:/Users/Aaron/Documents/GitHub/sliding_time_window_data/'
-        current_date = 'Aaron Result_' + current_date
+        base_path = 'C:/Users/Aaron/Documents/GitHub/sliding_time_horizon_new/results'
+        current_date = current_date + '_Aaron Result_debug'
 
     # Create a folder with the formatted date if it doesn't exist
     folder_path = os.path.join(base_path, current_date)

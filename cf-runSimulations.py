@@ -5,57 +5,116 @@ import numpy as np
 import pickle #added
 import glob #added
 from copy import deepcopy
+import os
+from datetime import datetime, date
+import pandas as pd
 
 
-def gen_vehicles_and_parameters(replications, numSpots, truckProps, nhts_data, 
-                                doubleParkWeights, tauValues, zetaValues, saveIndex=1):
+# def gen_vehicles_and_parameters(replications, numSpots, truckProps, nhts_data, 
+#                                 doubleParkWeights, tauValues, zetaValues, saveIndex=1):
     
+#     args = []
+#     i = 0
+#     reps = range(replications)
+#     for rep in reps:
+#         for numSpot in numSpots:
+#             totalNumVehicles = list(range(11*numSpot, 34*numSpot, 11*numSpot))
+#             # totalNumVehicles = list(range(11, 78, 11))
+#             for numVehicles in totalNumVehicles:
+#                 # numTrucks = list(range(1*numSpot, numVehicles*numSpot, 10*numSpot))
+
+#                 for truckProp in truckProps:
+#                     numTruck = int(np.round(truckProp*numVehicles))
+#                     numCar = numVehicles-numTruck
+#                     tempData = simulateData(min(max(numCar, 0), numVehicles), min(max(numTruck, 0), numVehicles), nhts_data)
+#                     #args = []
+#                     for doubleParkWeight in doubleParkWeights:
+#                         cruisingWeight = 100-doubleParkWeight
+#                         for tauValue in tauValues:
+#                             for bufferValue in bufferValues:
+#                                 for zetaValue in zetaValues:
+#                                     #tempArg = (numSpot, tempData, bufferValue, zetaValue, doubleParkWeight, cruisingWeight, i, tauValue)
+#                                     tempArg = {'numSpot': numSpot, 
+#                                                     'tempData': tempData, 
+#                                                     'bufferValue': bufferValue, 
+#                                                     'zetaValue': zetaValue, 
+#                                                     'doubleParkWeight': doubleParkWeight, 
+#                                                     'cruisingWeight': cruisingWeight, 
+#                                                     'i': i, 
+#                                                     'tauValue': tauValue}
+                                    
+#                                     if (numSpot == 1 and doubleParkWeight == 100 and numVehicles == 77):
+#                                         args.append(tempArg)
+#                                     else:
+#                                         args.append(tempArg)
+#                                         pass
+#                                     i += 1
+#                                     print(i) 
+    
+    
+#     saveFile = 'AaronRes/Veh_and_Params.dat'.format(saveIndex)
+
+#     with open(saveFile, 'wb') as file:
+#         pickle.dump(args, file)
+#         file.close()
+    
+#     return args
+
+
+def gen_vehicles_and_parameters(replications, numSpots, truckProps, nhts_data,
+                                receivedDeltas, doubleParkWeights, tauValues,
+                                bufferValues, zetaValues, rhoValues, nuValues):
     args = []
     i = 0
-    reps = range(replications)
-    for rep in reps:
+    #reps = range(0,5)
+    for rep in range(0, replications):
         for numSpot in numSpots:
             totalNumVehicles = list(range(11*numSpot, 34*numSpot, 11*numSpot))
-            # totalNumVehicles = list(range(11, 78, 11))
-            for numVehicles in totalNumVehicles:
-                # numTrucks = list(range(1*numSpot, numVehicles*numSpot, 10*numSpot))
 
+            for numVehicles in totalNumVehicles:
                 for truckProp in truckProps:
-                    numTruck = int(np.round(truckProp*numVehicles))
+                    numTruck = int(np.round(truckProp/100*numVehicles))
                     numCar = numVehicles-numTruck
-                    tempData = simulateData(min(max(numCar, 0), numVehicles), min(max(numTruck, 0), numVehicles), nhts_data)
+                    baseData = simulateData(min(max(numCar, 0), numVehicles), min(max(numTruck, 0), numVehicles), nhts_data)
                     #args = []
-                    for doubleParkWeight in doubleParkWeights:
-                        cruisingWeight = 100-doubleParkWeight
-                        for tauValue in tauValues:
-                            for bufferValue in bufferValues:
-                                for zetaValue in zetaValues:
-                                    #tempArg = (numSpot, tempData, bufferValue, zetaValue, doubleParkWeight, cruisingWeight, i, tauValue)
-                                    tempArg = {'numSpot': numSpot, 
-                                                    'tempData': tempData, 
-                                                    'bufferValue': bufferValue, 
-                                                    'zetaValue': zetaValue, 
-                                                    'doubleParkWeight': doubleParkWeight, 
-                                                    'cruisingWeight': cruisingWeight, 
-                                                    'i': i, 
-                                                    'tauValue': tauValue}
-                                    
-                                    if (numSpot == 1 and doubleParkWeight == 100 and numVehicles == 77):
-                                        args.append(tempArg)
-                                    else:
-                                        args.append(tempArg)
-                                        pass
-                                    i += 1
-                                    print(i) 
+                    for receivedDelta in receivedDeltas:
+                        tempData = apply_received_delta(baseData, receivedDelta)
+                        for doubleParkWeight in doubleParkWeights:
+                            cruisingWeight = 100-doubleParkWeight
+                            for tauValue in tauValues:
+                                for bufferValue in bufferValues:
+                                    for zetaValue in zetaValues:
+                                        for rhoValue in rhoValues:
+                                            for nuValue in nuValues:
+                                                tempArg = (numSpot, tempData, bufferValue, zetaValue, doubleParkWeight, cruisingWeight, i, tauValue, rhoValue, nuValue) #, rhoValue, nuValue
+
+                                                # if i == 8:
+                                                #     print('i = ' + str(i))
+                                                #runFullSetOfResults(*tempArg)
+                                                if (numSpot == 1 and doubleParkWeight == 100 and numVehicles == 77):
+                                                    args.append(tempArg)
+                                                else:
+                                                    args.append(tempArg)
+                                                    pass
+                                                i += 1
+                                                print(i)
     
-    
-    saveFile = 'AaronRes/Veh_and_Params.dat'.format(saveIndex)
+    current_date = date.today().strftime('%Y-%m-%d')                                            
+
+    if('connorforsythe' in os.getcwd()):
+        saveFile = '/Users/connorforsythe/Library/CloudStorage/Box-Box/CMU/SmartCurbs/Results/' + str(current_date) + '_Args.dat'
+        #current_date = 'Connor Result_'+current_date
+    else:
+        saveFile = 'C:/Users/Aaron/Documents/GitHub/sliding_time_horizon_new/results/' + str(current_date) + '_Args.dat'
+        #current_date = 'Aaron Result_' + current_date    
+
 
     with open(saveFile, 'wb') as file:
         pickle.dump(args, file)
         file.close()
     
     return args
+
 
 def apply_received_delta(data, received_delta):
     r = deepcopy(data)
@@ -68,6 +127,9 @@ def apply_received_delta(data, received_delta):
 
     return r
 
+
+
+
 if __name__ == '__main__':
 
     #numSpots = [1, 2, 5, 10, 25]
@@ -76,22 +138,77 @@ if __name__ == '__main__':
     # totalNumVehicles = list(range(11,78,11))
     # totalNumVehicles = [405]
     #doubleParkWeights = range(0, 101,25)
-    doubleParkWeights = [100]
+    doubleParkWeights = [1]
     bufferValues = [0]
     # bufferValues = [0]
     tauValues = [30]
     #zetaValues = [1,5]
-    zetaValues = [5, 10]
+    zetaValues = [5]
     truckProps = [100]
-    # tauValues = [5]
-    replications = 5 #added by Aaron
+    replications = 3 #added by Aaron
     windowShift = 10 #added by Aaron
-    #rhoValues = [0, 30]
-    #nuValues = [0, 30]
-    rhoValues = [0]
-    nuValues = [0]
-    receivedDeltas = [300, -1]# Aaron - this is the parameter that will enforce how early a request is received.
+    rhoValues = [0, 60]
+    nuValues = [0, 60]
+    receivedDeltas = [-1, 300]# Aaron - this is the parameter that will enforce how early a request is received.
     #When receivedDelta < 0, the behavior will default to NHTS for cars and 30 minutes for truck
+
+    np.random.seed(3102023)
+    np.random.seed(16112023)
+
+
+
+    #execute worflow
+    
+    #nhts_data = load_nhts_data(windowShift)  #added windowShift
+
+    #args = gen_vehicles_and_parameters(replications, numSpots, truckProps, nhts_data, receivedDeltas, doubleParkWeights, tauValues, bufferValues, zetaValues, rhoValues, nuValues)
+
+    
+    # numThreads = mp.cpu_count()-2
+    # #numThreads = 4
+    # chunkSize = max(int(len(args)/numThreads), 1)
+    # np.random.shuffle(args)
+    # with Pool(numThreads) as pool:
+    #     r = pool.starmap(runFullSetOfResults, args, chunksize=chunkSize)
+    #     pool.close()
+
+
+    #debugging workflow
+    file = open('C:/Users/Aaron/Documents/GitHub/sliding_time_horizon_new/results/2023-12-15_Args.dat', 'rb')
+    args_reload = pickle.load(file)
+    file.close()
+    run = args_reload[176]
+    outcomes = runFullSetOfResults(numSpots = run[0],
+                                   data = run[1],
+                                   buffer = run[2],
+                                   zeta = run[3],
+                                   weightDoubleParking = 1,
+                                   weightCruising = run[5],
+                                   saveIndex = run[6],
+                                   tau = run[7],
+                                   rho = run[8],
+                                   nu = run[9])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     # numSpots = [10]
     # numSpots[0] = 1
@@ -104,10 +221,10 @@ if __name__ == '__main__':
 
 
 
-    np.random.seed(3102023)
-    np.random.seed(16112023)
+    # np.random.seed(3102023)
+    # np.random.seed(16112023)
 
-    nhts_data = load_nhts_data(windowShift)  #added windowShift
+    # nhts_data = load_nhts_data(windowShift)  #added windowShift
     
     # args = gen_vehicles_and_parameters(replications, numSpots, truckProps, nhts_data, 
     #                                 doubleParkWeights, tauValues, zetaValues)
@@ -162,49 +279,56 @@ if __name__ == '__main__':
     #     r = pool.starmap(runFullSetOfResults, arg_tuples, chunksize=chunkSize)
     #     pool.close()
 
-    a = simulateData(10, 10, nhts_data)
-    b = apply_received_delta(a, 15)
+    #a = simulateData(10, 10, nhts_data)
+    #b = apply_received_delta(a, 15)
     
     # Connor's original code
 
-    i = 0
-    reps = range(0,5)
-    for rep in reps:
-        for numSpot in numSpots:
-            totalNumVehicles = list(range(11*numSpot, 34*numSpot, 11*numSpot))
+    # args = []
+    # i = 0
+    # reps = range(0,5)
+    # for rep in reps:
+    #     for numSpot in numSpots:
+    #         totalNumVehicles = list(range(11*numSpot, 34*numSpot, 11*numSpot))
 
-            for numVehicles in totalNumVehicles:
-                for truckProp in truckProps:
-                    numTruck = int(np.round(truckProp/100*numVehicles))
-                    numCar = numVehicles-numTruck
-                    baseData = simulateData(min(max(numCar, 0), numVehicles), min(max(numTruck, 0), numVehicles), nhts_data)
-                    args = []
-                    for receivedDelta in receivedDeltas:
-                        tempData = apply_received_delta(baseData, receivedDelta)
-                        for doubleParkWeight in doubleParkWeights:
-                            cruisingWeight = 100-doubleParkWeight
-                            for tauValue in tauValues:
-                                for bufferValue in bufferValues:
-                                    for zetaValue in zetaValues:
-                                        for rhoValue in rhoValues:
-                                            for nuValue in nuValues:
-                                                tempArg = (numSpot, tempData, bufferValue, zetaValue, doubleParkWeight, cruisingWeight, i, tauValue, rhoValue, nuValue) #, rhoValue, nuValue
+    #         for numVehicles in totalNumVehicles:
+    #             for truckProp in truckProps:
+    #                 numTruck = int(np.round(truckProp/100*numVehicles))
+    #                 numCar = numVehicles-numTruck
+    #                 baseData = simulateData(min(max(numCar, 0), numVehicles), min(max(numTruck, 0), numVehicles), nhts_data)
+    #                 #args = []
+    #                 for receivedDelta in receivedDeltas:
+    #                     tempData = apply_received_delta(baseData, receivedDelta)
+    #                     for doubleParkWeight in doubleParkWeights:
+    #                         cruisingWeight = 100-doubleParkWeight
+    #                         for tauValue in tauValues:
+    #                             for bufferValue in bufferValues:
+    #                                 for zetaValue in zetaValues:
+    #                                     for rhoValue in rhoValues:
+    #                                         for nuValue in nuValues:
+    #                                             tempArg = (numSpot, tempData, bufferValue, zetaValue, doubleParkWeight, cruisingWeight, i, tauValue, rhoValue, nuValue) #, rhoValue, nuValue
 
-                                                # if i == 8:
-                                                #     print('i = ' + str(i))
-                                                #runFullSetOfResults(*tempArg)
-                                                if (numSpot == 1 and doubleParkWeight == 100 and numVehicles == 77):
-                                                    args.append(tempArg)
-                                                else:
-                                                    args.append(tempArg)
-                                                    pass
-                                                i += 1
-                                                print(i)
+    #                                             # if i == 8:
+    #                                             #     print('i = ' + str(i))
+    #                                             #runFullSetOfResults(*tempArg)
+    #                                             if (numSpot == 1 and doubleParkWeight == 100 and numVehicles == 77):
+    #                                                 args.append(tempArg)
+    #                                             else:
+    #                                                 args.append(tempArg)
+    #                                                 pass
+    #                                             i += 1
+    #                                             print(i)
 
-                                        #numThreads = mp.cpu_count()-2
-                                        numThreads = 4
-                                        chunkSize = max(int(len(args)/numThreads), 1)
-                                        np.random.shuffle(args)
-                                        with Pool(numThreads) as pool:
-                                            r = pool.starmap(runFullSetOfResults, args, chunksize=chunkSize)
-                                            pool.close()
+    # saveFile = '/results/Veh_and_Params_15_Dec_2023.dat'
+
+    # with open(saveFile, 'wb') as file:
+    #     pickle.dump(args, file)
+    #     file.close()
+
+                                        # #numThreads = mp.cpu_count()-2
+                                        # numThreads = 4
+                                        # chunkSize = max(int(len(args)/numThreads), 1)
+                                        # np.random.shuffle(args)
+                                        # with Pool(numThreads) as pool:
+                                        #     r = pool.starmap(runFullSetOfResults, args, chunksize=chunkSize)
+                                        #     pool.close()

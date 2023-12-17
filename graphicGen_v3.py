@@ -148,7 +148,7 @@ def plot_unassigned(data):
 
 
 plt.rcParams['figure.dpi'] = 500
-file_path = 'C:/Users/Aaron/Documents/GitHub/sliding_time_window_data/Aaron Result_2023-12-14/*.dat'
+file_path = 'C:/Users/Aaron/Documents/GitHub/sliding_time_horizon_new/results/2023-12-15_Aaron Result/*.dat'
 files = load_data(file_path)
 res = parse_data(files)
 data, FullFailure_ls, MPCFailure_ls = del_incomplete_runs(res)
