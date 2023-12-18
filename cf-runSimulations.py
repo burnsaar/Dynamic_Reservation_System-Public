@@ -80,7 +80,7 @@ def gen_vehicles_and_parameters(replications, numSpots, truckProps, nhts_data,
                     for receivedDelta in receivedDeltas:
                         tempData = apply_received_delta(baseData, receivedDelta)
                         for doubleParkWeight in doubleParkWeights:
-                            cruisingWeight = 100-doubleParkWeight
+                            cruisingWeight = 1-doubleParkWeight
                             for tauValue in tauValues:
                                 for bufferValue in bufferValues:
                                     for zetaValue in zetaValues:
@@ -105,7 +105,7 @@ def gen_vehicles_and_parameters(replications, numSpots, truckProps, nhts_data,
         saveFile = '/Users/connorforsythe/Library/CloudStorage/Box-Box/CMU/SmartCurbs/Results/' + str(current_date) + '_Args.dat'
         #current_date = 'Connor Result_'+current_date
     else:
-        saveFile = 'C:/Users/Aaron/Documents/GitHub/sliding_time_horizon_new/results/' + str(current_date) + '_Args.dat'
+        saveFile = 'C:/Users/Aaron/Documents/GitHub/sliding_time_horizon_new/results/' + str(current_date) + '_Args_big_set.dat'
         #current_date = 'Aaron Result_' + current_date    
 
 
@@ -133,7 +133,7 @@ def apply_received_delta(data, received_delta):
 if __name__ == '__main__':
 
     #numSpots = [1, 2, 5, 10, 25]
-    numSpots = [1, 2, 5]
+    numSpots = [1, 2, 5, 10]
     #numSpots = [1]
     # totalNumVehicles = list(range(11,78,11))
     # totalNumVehicles = [405]
@@ -143,9 +143,9 @@ if __name__ == '__main__':
     # bufferValues = [0]
     tauValues = [30]
     #zetaValues = [1,5]
-    zetaValues = [5]
+    zetaValues = [5, 10]
     truckProps = [100]
-    replications = 3 #added by Aaron
+    replications = 5 #added by Aaron
     windowShift = 10 #added by Aaron
     rhoValues = [0, 60]
     nuValues = [0, 60]
@@ -159,35 +159,35 @@ if __name__ == '__main__':
 
     #execute worflow
     
-    #nhts_data = load_nhts_data(windowShift)  #added windowShift
+    nhts_data = load_nhts_data(windowShift)  #added windowShift
 
-    #args = gen_vehicles_and_parameters(replications, numSpots, truckProps, nhts_data, receivedDeltas, doubleParkWeights, tauValues, bufferValues, zetaValues, rhoValues, nuValues)
+    args = gen_vehicles_and_parameters(replications, numSpots, truckProps, nhts_data, receivedDeltas, doubleParkWeights, tauValues, bufferValues, zetaValues, rhoValues, nuValues)
 
     
-    # numThreads = mp.cpu_count()-2
-    # #numThreads = 4
-    # chunkSize = max(int(len(args)/numThreads), 1)
-    # np.random.shuffle(args)
-    # with Pool(numThreads) as pool:
-    #     r = pool.starmap(runFullSetOfResults, args, chunksize=chunkSize)
-    #     pool.close()
+    numThreads = mp.cpu_count()-2
+    #numThreads = 4
+    chunkSize = max(int(len(args)/numThreads), 1)
+    np.random.shuffle(args)
+    with Pool(numThreads) as pool:
+        r = pool.starmap(runFullSetOfResults, args, chunksize=chunkSize)
+        pool.close()
 
 
     #debugging workflow
-    file = open('C:/Users/Aaron/Documents/GitHub/sliding_time_horizon_new/results/2023-12-15_Args.dat', 'rb')
-    args_reload = pickle.load(file)
-    file.close()
-    run = args_reload[176]
-    outcomes = runFullSetOfResults(numSpots = run[0],
-                                   data = run[1],
-                                   buffer = run[2],
-                                   zeta = run[3],
-                                   weightDoubleParking = 1,
-                                   weightCruising = run[5],
-                                   saveIndex = run[6],
-                                   tau = run[7],
-                                   rho = run[8],
-                                   nu = run[9])
+    # file = open('C:/Users/Aaron/Documents/GitHub/sliding_time_horizon_new/results/2023-12-15_Args.dat', 'rb')
+    # args_reload = pickle.load(file)
+    # file.close()
+    # run = args_reload[176]
+    # outcomes = runFullSetOfResults(numSpots = run[0],
+    #                                data = run[1],
+    #                                buffer = run[2],
+    #                                zeta = run[3],
+    #                                weightDoubleParking = 1,
+    #                                weightCruising = run[5],
+    #                                saveIndex = run[6],
+    #                                tau = run[7],
+    #                                rho = run[8],
+    #                                nu = run[9])
 
 
 

@@ -397,7 +397,7 @@ def getPastInfo(outcomeList, currentTime):
     #If things remain the same between time steps and a given vehicle is no
     #longer relevant they can be dropped. Inverse is also stored.
     assignedIndicesToDrop = (data.loc[indices, 'd_i_Final']<currentTime)&(data.loc[indices, 'Assigned']==1)
-    unassignedIndicesToDrop = (data.loc[indices, 'b_i_OG'] < currentTime) & (data.loc[indices, 'Assigned'] == 0)
+    unassignedIndicesToDrop = (data.loc[indices, 'a_i_OG'] < currentTime) & (data.loc[indices, 'Assigned'] == 0)
     indicesToDrop = (assignedIndicesToDrop)|(unassignedIndicesToDrop)
     indicesToKeep = np.logical_not(indicesToDrop)
 
@@ -463,7 +463,7 @@ def runSlidingOptimization(data, numSpaces, zeta=5, start=0, stop=(24*60)+1, buf
     pastInfo = None
     for j in iterVar:
         print(j)
-        if j >= 570:  #850  #660 #720
+        if j >= 575:  #850  #660 #720
             print(stop)
 
         if (len(r) > 1):
@@ -834,7 +834,7 @@ def runFullSetOfResults(numSpots, data, buffer, zeta, weightDoubleParking, weigh
         current_date = current_date + '_Connor Result'
     else:
         base_path = 'C:/Users/Aaron/Documents/GitHub/sliding_time_horizon_new/results'
-        current_date = current_date + '_Aaron Result_debug'
+        current_date = current_date + '_Aaron Result_big_set'
 
     # Create a folder with the formatted date if it doesn't exist
     folder_path = os.path.join(base_path, current_date)
