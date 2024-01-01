@@ -480,7 +480,7 @@ def runSlidingOptimization(data, numSpaces, zeta=5, start=0, stop=(24*60)+1, buf
         data.loc[:, 'a_i_OG-nu'] = data.loc[:, 'a_i_OG'] - nu
         data.loc[:, 'tau'] = tau
         data.loc[:, 'rho'] = rho
-        data.loc[:, 'eta'] = nu
+        data.loc[:, 'nu'] = nu
         data.loc[:, 'zeta'] = zeta
         tempData = data.loc[(data.loc[:, 'Received'] <= j)&(data.loc[:, 'a_i_OG'] <= (j+tau)), :]
         # tempData.sort_values(by = ['a_i_OG', 'Received'], ascending = [True, True], inplace = True) #Aaron added to address t_i indexing issue with hold over reservations
@@ -760,69 +760,102 @@ def runFCFS(numSpots, data):
     # r = seq_curb(numSpots, data, (6 * 24))
 
 
-def runFullSetOfResults(numSpots, data, buffer, zeta, weightDoubleParking, weightCruising, saveIndex=0, tau=0, rho=0, nu=0):
+def runFullSetOfResults(algo, scenario, numSpots, data, buffer, zeta, weightDoubleParking, weightCruising, received_delta, saveIndex=0, dataIndex=0, tau=0, rho=0, nu=0):
     r = {}
     
     r['OG_index'] = saveIndex
 
     # buffer+=1
 
-    t0 = datetime.now()
 
-    try:
-        r['FCFS'] = runFCFS(numSpots, deepcopy(data))
-    except Exception as e:
-        r['FCFS'] = e
+    if algo == 'FCFS':
+        t0 = datetime.now()
+    
+        try:
+            r['FCFS'] = runFCFS(numSpots, deepcopy(data))
+        except Exception as e:
+            r['FCFS'] = e
+    
+        t1 = datetime.now()
+        r['FCFS-time'] = t1-t0
+        try:
+            r['FCFS-unassigned'] = getNumUnassignedMinutes(r['FCFS'])
+        except Exception as e:
+            r['FCFS-unassigned'] = e
+            
+        r['full'] = None
+        r['full-unassigned'] = None
+        r['full-time'] = None
+        r['sliding'] = None
+        r['sliding-unassigned'] = None
+        r['sliding-time'] = None
+    
+    
+    elif algo == 'full':
+        fullData = deepcopy(data)
+        # fullZeta = max(fullData.loc[:, 'Received'])-min(fullData.loc[:, 'Received'])-1
+        fullZeta = 20000
+        fulltau = 20000 #Aaron added this
+        fullData.loc[:, 'Received'] = -1
+        
+        try:
+            t2 = datetime.now()
+            r['full'] = runSlidingOptimization(fullData, numSpots, zeta=fullZeta, buffer=buffer, tau = fulltau, #Aaron added fulltau
+                                               weightDoubleParking=weightDoubleParking, weightCruising=weightCruising,
+                                               timeLimit=60)
+            t3 = datetime.now()
+        except Exception as e:
+            r['full'] = e
+            
+        try:
+            r['full-unassigned'] = getNumUnassignedMinutes(r['full'])
+        except Exception as e:
+            r['full-unassigned'] = e
+        
+        r['full-time'] = t3-t2
+        
+        r['sliding'] = None
+        r['sliding-unassigned'] = None
+        r['sliding-time'] = None
+        r['FCFS'] = None
+        r['FCFS-unassigned'] = None
+        r['FCFS-time'] = None
+    
+    else:     #going with the sliding algo
+        try:
+            t4 = datetime.now()
+            r['sliding'] = runSlidingOptimization(deepcopy(data), numSpots, zeta=zeta, buffer=buffer,
+                                                  weightDoubleParking=weightDoubleParking, weightCruising=weightCruising,
+                                                  timeLimit=30, tau=tau, returnBoth=False, saveID=saveIndex, rho=rho, nu=nu)
+            t5 = datetime.now()
+        except Exception as e:
+            r['sliding'] = e
+            t4 = datetime.now()
+            r['sliding'] = runSlidingOptimization(deepcopy(data), numSpots, zeta=zeta, buffer=buffer,
+                                                  weightDoubleParking=weightDoubleParking, weightCruising=weightCruising,
+                                                  timeLimit=30, tau=tau, returnBoth=True, saveID=saveIndex, rho=rho, nu=nu)
+            t5 = datetime.now()
+    
+        try:
+            r['sliding-unassigned'] = getNumUnassignedMinutes(r['sliding'])
+        except Exception as e:
+            r['sliding-unassigned'] = e
+            
+        r['sliding-time'] = t5-t4
+        
+        r['FCFS'] = None
+        r['FCFS-unassigned'] = None
+        r['FCFS-time'] = None
+        r['full'] = None
+        r['full-unassigned'] = None
+        r['full-time'] = None
+        
+        
+            
+    r['spec'] = {'algo':algo, 'scenario': scenario, 'numSpots':numSpots, 'buffer':buffer, 'zeta':zeta, 'weightDoubleParking':weightDoubleParking, 'weightCruising':weightCruising,
+                 'tau':tau, 'numVehicles': len(data), 'rho': rho, 'nu': nu, 'received_delta': received_delta, 'run_index': saveIndex, 'data_index': dataIndex} 
 
-    t1 = datetime.now()
-    fullData = deepcopy(data)
-    # fullZeta = max(fullData.loc[:, 'Received'])-min(fullData.loc[:, 'Received'])-1
-    fullZeta = 20000
-    fulltau = 20000 #Aaron added this
-    fullData.loc[:, 'Received'] = -1
 
-    # try:
-    #     r['full'] = runFullOptimization(deepcopy(data), numSpots, buffer, weightDoubleParking, weightCruising)['data']
-    # except:
-    #     r['full'] = None
-    try:
-        r['full'] = runSlidingOptimization(fullData, numSpots, zeta=fullZeta, buffer=buffer, tau = fulltau, #Aaron added fulltau
-                                           weightDoubleParking=weightDoubleParking, weightCruising=weightCruising,
-                                           timeLimit=60)
-    except Exception as e:
-        r['full'] = e
-    t2 = datetime.now()
-    try:
-        r['sliding'] = runSlidingOptimization(deepcopy(data), numSpots, zeta=zeta, buffer=buffer,
-                                              weightDoubleParking=weightDoubleParking, weightCruising=weightCruising,
-                                              timeLimit=30, tau=tau, returnBoth=False, saveID=saveIndex, rho=rho, nu=nu)
-    except Exception as e:
-        r['sliding'] = e
-        r['sliding'] = runSlidingOptimization(deepcopy(data), numSpots, zeta=zeta, buffer=buffer,
-                                              weightDoubleParking=weightDoubleParking, weightCruising=weightCruising,
-                                              timeLimit=30, tau=tau, returnBoth=True, saveID=saveIndex, rho=rho, nu=nu)
-    t3 = datetime.now()
-    r['spec'] = {'numSpots':numSpots, 'buffer':buffer, 'zeta':zeta, 'weightDoubleParking':weightDoubleParking, 'weightCruising':weightCruising,
-                 'tau':tau, 'numVehicles': len(data), 'rho': rho, 'nu': nu, 'received_delta': data['received_delta'].iloc[0]}
-
-    r['FCFS-time'] = t1-t0
-    r['full-time'] = t2 - t1
-    r['sliding-time'] = t3 - t2
-
-    try:
-        r['FCFS-unassigned'] = getNumUnassignedMinutes(r['FCFS'])
-    except Exception as e:
-        r['FCFS-unassigned'] = e
-
-    try:
-        r['sliding-unassigned'] = getNumUnassignedMinutes(r['sliding'])
-    except Exception as e:
-        r['sliding-unassigned'] = e
-
-    try:
-        r['full-unassigned'] = getNumUnassignedMinutes(r['full'])
-    except Exception as e:
-        r['full-unassigned'] = e
 
     # #ChatGPT generated code for more robust saving of results
     # # Determine the current date and format it
@@ -834,7 +867,7 @@ def runFullSetOfResults(numSpots, data, buffer, zeta, weightDoubleParking, weigh
         current_date = current_date + '_Connor Result'
     else:
         base_path = 'C:/Users/Aaron/Documents/GitHub/sliding_time_horizon_new/results'
-        current_date = current_date + '_Aaron Result_big_set'
+        current_date = current_date + '_Aaron Result'
 
     # Create a folder with the formatted date if it doesn't exist
     folder_path = os.path.join(base_path, current_date)

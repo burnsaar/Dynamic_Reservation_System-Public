@@ -60,26 +60,38 @@ def del_failed_runs(data):
     Full_status_error = []
     Full_status_9 = []
     
+    MPC_status_error = []
     MPC_status_9 = []
+    
     completed_data = []
     
     idx = 0
     for item in data:
-        if 'StatusCode' in item['full'].columns:
-            Full_status_error.append(item)
-            if item['full']['StatusCode'][0] == 9:
-                Full_status_9.append(item)
-        else:
+        if isinstance(item['FCFS'], pd.DataFrame):
             completed_data.append(item)
-        
-        if 'StatusCode' in item['sliding'].columns:
-            MPC_status_9.append(item)
             
+        if isinstance(item['full'], pd.DataFrame):       
+            if 'StatusCode' in item['full'].columns:
+                Full_status_error.append(item)
+                if item['full']['StatusCode'][0] == 9:
+                    Full_status_9.append(item)
+            else:
+                completed_data.append(item)
+        
+        if isinstance(item['sliding'], pd.DataFrame):
+            if 'StatusCode' in item['sliding'].columns:
+                MPC_status_error.append(item)
+                if item['sliding']['StatusCode'].any() == 9: #TODO: fix this to check if any entry is a 9
+                    MPC_status_9.append(item)
+            else:
+                completed_data.append(item)
+ 
         idx += 1
     
     return completed_data, Full_status_error, Full_status_9, MPC_status_9
 
 def extract_run_params(data):
+    algo = []
     numSpots = []
     buffer = []
     weightCruising = []
@@ -92,60 +104,94 @@ def extract_run_params(data):
     received_delta = []
     
     for run in data:
+        algo.append(run['spec']['algo'])
         numSpots.append(run['spec']['numSpots'])
         buffer.append(run['spec']['buffer'])
         weightCruising.append(run['spec']['weightCruising'])
         weightDblPark.append(run['spec']['weightDoubleParking'])
         zeta.append(run['spec']['zeta'])
-        numVeh.append(len(run['FCFS']))
+        if algo == 'FCFS':
+            numVeh.append(len(run['FCFS']))
+        elif algo == 'full':
+            numVeh.append(len(run['full']))
+        elif algo == 'sliding':
+            numVeh.append(len(run['sliding']))
         tau.append(run['spec']['tau'])
         rho.append(run['spec']['rho'])
         nu.append(run['spec']['nu'])
         received_delta.append(run['spec']['received_delta'])
-        run_params = pd.DataFrame(list(zip(numSpots, numVeh, zeta, buffer, weightDblPark, weightCruising, tau, rho, nu, received_delta)),
-                                  columns = ['numSpots', 'numVeh', 'zeta', 'buffer', 'weightDblPark', 'weightCruising', 'tau', 'rho', 'nu', 'received_delta'])
+        run_params = pd.DataFrame(list(zip(algo, numSpots, numVeh, zeta, buffer, weightDblPark, weightCruising, tau, rho, nu, received_delta)),
+                                  columns = ['algo','numSpots', 'numVeh', 'zeta', 'buffer', 'weightDblPark', 'weightCruising', 'tau', 'rho', 'nu', 'received_delta'])
     
     return run_params
 
 def plot_unassigned(data):
+    FCFS_data = []
+    FCFS_data_idx = []
     FCFS_unassigned = []
-    Full_unassigned = []
-    MPC_unassigned = []
+    full_data = []
+    full_data_idx = []
+    full_unassigned = []
+    sliding_data = []
+    sliding_data_idx = []
+    sliding_unassigned = []
     
-    for i in range(len(data)):
-        FCFS_unassigned.append(data[i]['FCFS-unassigned'])
-        Full_unassigned.append(data[i]['full-unassigned'])
-        MPC_unassigned.append(data[i]['sliding-unassigned'])
-        
-    x = range(len(data))
-    x = [item['OG_index'] for item in completed_data]
-    #x = range(min(x), max(x), 5)
-    #x.sort()
+    for item in data:
+        if isinstance(item['FCFS'], pd.DataFrame):
+            FCFS_data.append(item)
+            FCFS_data_idx.append(item['spec']['data_index'])
+            FCFS_unassigned.append(item['FCFS-unassigned'])
+        if isinstance(item['full'], pd.DataFrame):
+            full_data.append(item)
+            full_data_idx.append(item['spec']['data_index'])
+            full_unassigned.append(item['full-unassigned'])
+        if isinstance(item['sliding'], pd.DataFrame):
+            sliding_data.append(item)
+            sliding_data_idx.append(item['spec']['data_index'])
+            sliding_unassigned.append(item['sliding-unassigned'])
+            
+    d = {'data_idx': FCFS_data_idx, 'FCFS_unassigned': FCFS_unassigned}
+    FCFS_df = pd.DataFrame(d)
+    d = {'data_idx': full_data_idx, 'full_unassigned': full_unassigned}
+    full_df = pd.DataFrame(d)
+    d = {'data_idx': sliding_data_idx, 'sliding_unassigned': sliding_unassigned}
+    sliding_df = pd.DataFrame(d)
+    
+    full_df.drop(0, inplace = True)
+
     plt.figure()
-    plt.scatter(x, FCFS_unassigned, label = 'FCFS')
-    plt.scatter(x, Full_unassigned, label = 'Full')
-    plt.scatter(x, MPC_unassigned, label = 'MPC')
+    plt.scatter(FCFS_data_idx, FCFS_unassigned, label = 'FCFS')
+    plt.scatter(full_data_idx, full_unassigned, label = 'Full')
+    plt.scatter(sliding_data_idx, sliding_unassigned, label = 'MPC')
     plt.legend()
-    plt.xticks(range(min(x), max(x), 25))
-    plt.xlabel('res #')
+    # plt.xticks(range(min(x), max(x), 25))
+    plt.xlabel('Vehicle Request Matrix')
     plt.ylabel('unassigned minutes of service')
     plt.show()
     
-    diff_FCFS_Full = np.subtract(FCFS_unassigned, Full_unassigned)
-    diff_FCFS_MPC = np.subtract(FCFS_unassigned, MPC_unassigned)
-    diff_MPC_Full = np.subtract(MPC_unassigned, Full_unassigned)
+    FCFS_full_df = FCFS_df.merge(full_df, how = 'inner')
+    FCFS_full_df['diff'] = FCFS_full_df['FCFS_unassigned'] - FCFS_full_df['full_unassigned']
+    FCFS_MPC_df = FCFS_df.merge(sliding_df, how = 'inner')
+    FCFS_MPC_df['diff'] = FCFS_MPC_df['FCFS_unassigned'] - FCFS_MPC_df['sliding_unassigned']
+    MPC_full_df = sliding_df.merge(full_df, how = 'inner')
+    MPC_full_df['diff'] = MPC_full_df['sliding_unassigned'] - MPC_full_df['full_unassigned']
     
-    plt.scatter(x, diff_FCFS_Full, label = 'FCFS-Full')
-    plt.scatter(x, diff_FCFS_MPC, label = 'FCFS-MPC')
-    plt.scatter(x, diff_MPC_Full, label = 'MPC-Full')
+    
+    # diff_FCFS_Full = np.subtract(FCFS_unassigned, Full_unassigned)
+    # diff_FCFS_MPC = np.subtract(FCFS_unassigned, MPC_unassigned)
+    # diff_MPC_Full = np.subtract(MPC_unassigned, Full_unassigned)
+    
+    plt.scatter(x = FCFS_full_df['data_idx'], y = FCFS_full_df['diff'], label = 'FCFS-Full')
+    plt.scatter(x = FCFS_MPC_df['data_idx'], y = FCFS_MPC_df['diff'], label = 'FCFS-MPC')
+    plt.scatter(x = MPC_full_df['data_idx'], y = MPC_full_df['diff'], label = 'MPC-Full')
     plt.legend()
-    plt.xticks(range(min(x), max(x), 25))
-    plt.xlabel('OG run #')
-    plt.ylabel('unassigned minutes of service')
+    # plt.xticks(range(min(x), max(x), 25))
+    plt.xlabel('Vehicle Request Matrix')
+    plt.ylabel('redux unassigned minutes of service')
     plt.show()
     
 
-    return FCFS_unassigned, Full_unassigned, MPC_unassigned, diff_FCFS_Full, diff_FCFS_MPC, diff_MPC_Full
+    return FCFS_df, full_df, sliding_df, FCFS_data, full_data, sliding_data
 
 def get_analysis_data(run_params_complete, FCFS_unassigned, Full_unassigned,
                                   MPC_unassigned, diff_FCFS_Full, diff_FCFS_MPC, diff_MPC_Full):
@@ -243,29 +289,7 @@ def gen_boxplot(analysis_data, analysis_data_sub_2, analysis_data_sub_3, analysi
     plt.suptitle('Difference in Unassigned Parking Minutes')
     plt.title(title_str)
 
-
-
-
-if __name__ == '__main__':
-    plt.rcParams['figure.dpi'] = 500
-    file_path = 'C:/Users/Aaron/Documents/GitHub/sliding_time_horizon_new/results/2023-12-17_Aaron Result_big_set/*.dat'
-    files = load_data(file_path)
-    res = parse_data(files)
-    data, FullFailure_ls, MPCFailure_ls = del_incomplete_runs(res)
-    completed_data, Full_status_error, Full_status_9, MPC_status_9 = del_failed_runs(data)
-    
-    # data = res
-    run_params_OG = extract_run_params(data)
-    run_params_complete = extract_run_params(completed_data)
-    
-    FCFS_unassigned, Full_unassigned, MPC_unassigned, diff_FCFS_Full, diff_FCFS_MPC, diff_MPC_Full = plot_unassigned(completed_data)
-    
-    
-    
-    ############ Graphic Generation Below   
-    analysis_data = get_analysis_data(run_params_complete, FCFS_unassigned, Full_unassigned,
-                                      MPC_unassigned, diff_FCFS_Full, diff_FCFS_MPC, diff_MPC_Full)
-    
+def create_boxplots(analysis_data):
     
     #create boxplot with all data
     analysis_data_sub_2, analysis_data_sub_3, analysis_data_sub_4, analysis_data_sub_5 = get_subset_stages(analysis_data)
@@ -359,8 +383,100 @@ if __name__ == '__main__':
 
 
 
+def extract_plot_data(completed_data):
+    df = pd.DataFrame(columns = ['numSpots', 'unassigned minutes', 'scenario']) #item['FCFS-unassigned']-
+    
+    for item in completed_data:
+        if isinstance(item['FCFS'], pd.DataFrame):
+            df.loc[len(df)] = [item['spec']['numSpots'], item['FCFS-unassigned'], 'FCFS'] #scenario #0
+        
+        if isinstance(item['full'], pd.DataFrame):
+            df.loc[len(df)] = [item['spec']['numSpots'], item['full-unassigned'], 'Full-Day'] #scenario #1
+        
+        if isinstance(item['sliding'], pd.DataFrame):
+            if (item['spec']['scenario'] == 'scenario 2'): #scenario #2
+                df.loc[len(df)] = [item['spec']['numSpots'], item['sliding-unassigned'], 'scenario 2']
+            elif (item['spec']['scenario'] == 'scenario 3'): #scenario #3
+                df.loc[len(df)] = [item['spec']['numSpots'], item['sliding-unassigned'], 'scenario 3']
+            elif (item['spec']['scenario'] == 'scenario 4'): #scenario #4
+                df.loc[len(df)] = [item['spec']['numSpots'], item['sliding-unassigned'], 'scenario 4']
+            elif (item['spec']['scenario'] == 'scenario 5'): #scenario #5
+                df.loc[len(df)] = [item['spec']['numSpots'], item['sliding-unassigned'], 'scenario 5']
+            elif (item['spec']['scenario'] == 'scenario 6'): #scenario #6
+                df.loc[len(df)] = [item['spec']['numSpots'], item['sliding-unassigned'], 'scenario 6']
+            elif (item['spec']['scenario'] == 'scenario 7'): #scenario #7
+                df.loc[len(df)] = [item['spec']['numSpots'], item['sliding-unassigned'], 'scenario 7']
+                
+    df.sort_values(['scenario'], inplace = True)
+    
+    df_log = df.copy(deep = True)
+    df_log['unassigned minutes'] = np.log(df_log['unassigned minutes'])
+    
+    return df, df_log
+
+def gen_plots(df, log = False):
+    if log == False:
+        plt.figure()
+        sns.lineplot(data = df, x = 'numSpots', y = 'unassigned minutes', hue = 'scenario') #, err_style = 'bars'
+        plt.figure()
+        sns.lineplot(data = df, x = 'numSpots', y = 'unassigned minutes', hue = 'scenario', err_style = 'bars') #, err_style = 'bars'
+        plt.figure()
+        sns.boxplot(data = df, x = 'numSpots', y = 'unassigned minutes', hue = 'scenario')
+        plt.figure()
+        sns.stripplot(data = df, x = 'numSpots', y = 'unassigned minutes', hue = 'scenario')
+    else:
+        plt.figure()
+        sns.lineplot(data = df, x = 'numSpots', y = 'unassigned minutes', hue = 'scenario') #, err_style = 'bars'
+        plt.ylabel('log unassigned minutes')
+        plt.figure()
+        sns.lineplot(data = df, x = 'numSpots', y = 'unassigned minutes', hue = 'scenario', err_style = 'bars') #, err_style = 'bars'
+        plt.ylabel('log unassigned minutes')
+        plt.figure()
+        sns.boxplot(data = df, x = 'numSpots', y = 'unassigned minutes', hue = 'scenario')
+        plt.ylabel('log unassigned minutes')
+        plt.figure()
+        sns.stripplot(data = df, x = 'numSpots', y = 'unassigned minutes', hue = 'scenario')
+        plt.ylabel('log unassigned minutes')
+    return
+
+if __name__ == '__main__':
+    plt.rcParams['figure.dpi'] = 500
+    file_path = 'C:/Users/Aaron/Documents/GitHub/sliding_time_horizon_new/results/2023-12-31_Aaron Result/*.dat'
+    files = load_data(file_path)
+    res = parse_data(files)
+    data, FullFailure_ls, MPCFailure_ls = del_incomplete_runs(res)
+    completed_data, Full_status_error, Full_status_9, MPC_status_9 = del_failed_runs(data)
+
+    run_params_OG = extract_run_params(data)
+    run_params_complete = extract_run_params(completed_data)
+
+    ############ debug checks through graphics
+    FCFS_df, full_df, sliding_df, FCFS_data, full_data, sliding_data = plot_unassigned(completed_data)
+
+    ############ Graphic generation
+    df, df_log = extract_plot_data(completed_data)
+    
+    gen_plots(df)
+    gen_plots(df_log, log = True)
+    
+    
+    #plt.ylabel('redux unassigned minutes')
 
 
+
+
+
+
+
+
+# ############ Graphic Generation Below   
+
+# analysis_data = get_analysis_data(run_params_complete, FCFS_unassigned, Full_unassigned,
+#                                   MPC_unassigned, diff_FCFS_Full, diff_FCFS_MPC, diff_MPC_Full)
+
+# create_boxplots(analysis_data)
+
+    
 
 
 

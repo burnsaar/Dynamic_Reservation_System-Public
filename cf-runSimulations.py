@@ -61,43 +61,108 @@ import pandas as pd
 #     return args
 
 
-def gen_vehicles_and_parameters(replications, numSpots, truckProps, nhts_data,
+def gen_vehicles_and_parameters(replications, numSpots, demands, truckProps, nhts_data,
                                 receivedDeltas, doubleParkWeights, tauValues,
                                 bufferValues, zetaValues, rhoValues, nuValues):
+    
     args = []
-    i = 0
-    #reps = range(0,5)
+    i = 0 #counter for the args
+    j = 0 #counter for the basedata
     for rep in range(0, replications):
         for numSpot in numSpots:
-            totalNumVehicles = list(range(11*numSpot, 34*numSpot, 11*numSpot))
+            for demand in demands:
+                totalNumVehicles = [demand*11*numSpot]
+                
+                for numVehicles in totalNumVehicles:
+                    for truckProp in truckProps:
+                        numTruck = int(np.round(truckProp/100*numVehicles))
+                        numCar = numVehicles-numTruck
+                        baseData = simulateData(min(max(numCar, 0), numVehicles), min(max(numTruck, 0), numVehicles), nhts_data)
+                        
+                        tempArg = ('FCFS', 'scenario 0', numSpot, baseData, 0, 5, 1, 0, 'N/A', i, j, 30, 0, 0) #run FCFS, scenario 0
+                        args.append(tempArg)
+                        i += 1
+                        
+                        for receivedDelta in receivedDeltas:
+                            tempData = apply_received_delta(baseData, receivedDelta)
+                            
+                            if receivedDelta != -1: #we are at scenario #2
+                                tempArg = ('full', 'scenario 1', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 30, 0, 0) #append scenario #1
+                                args.append(tempArg)
+                                i += 1
+                                print(i) 
+                                tempArg = ('mpc','scenario 2', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 30, 0, 0) #append scenario #2
+                                args.append(tempArg)
+                                i += 1
+                                print(i) 
+                            else:
+                                tempArg = ('mpc', 'scenario 3', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 60, 0, 0) #append scenario #3
+                                args.append(tempArg)
+                                i += 1
+                                print(i) 
+                                tempArg = ('mpc', 'scenario 4', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 60, 15, 0) #append scenario #4
+                                args.append(tempArg)
+                                i += 1
+                                print(i) 
+                                tempArg = ('mpc', 'scenario 5', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 60, 15, 15) #append scenario #5
+                                args.append(tempArg)
+                                i += 1
+                                print(i) 
+                                
+                                r_i = np.subtract(tempData.loc[:,  'a_i_OG'], tempData.loc[:, 'Received'])
+                                tempArg = ('mpc', 'scenario 6', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 60, r_i, r_i) #append scenario #6
+                                args.append(tempArg)
+                                i += 1
+                                print(i) 
+                                
+                                tempArg = ('mpc', 'scenario 7', numSpot, tempData, 5, 5, 1, 0, receivedDelta, i, j, 60, r_i, r_i) #append scenario #7
+                                args.append(tempArg)
+                                i += 1
+                                print(i) 
+                                
+                        j += 1
+                                
+                            
+                        
+                        
+               
+    
+    
+    
+    # args = []
+    # i = 0
+    # #reps = range(0,5)
+    # for rep in range(0, replications):
+    #     for numSpot in numSpots:
+    #         totalNumVehicles = list(range(11*numSpot, 34*numSpot, 11*numSpot))
 
-            for numVehicles in totalNumVehicles:
-                for truckProp in truckProps:
-                    numTruck = int(np.round(truckProp/100*numVehicles))
-                    numCar = numVehicles-numTruck
-                    baseData = simulateData(min(max(numCar, 0), numVehicles), min(max(numTruck, 0), numVehicles), nhts_data)
-                    #args = []
-                    for receivedDelta in receivedDeltas:
-                        tempData = apply_received_delta(baseData, receivedDelta)
-                        for doubleParkWeight in doubleParkWeights:
-                            cruisingWeight = 1-doubleParkWeight
-                            for tauValue in tauValues:
-                                for bufferValue in bufferValues:
-                                    for zetaValue in zetaValues:
-                                        for rhoValue in rhoValues:
-                                            for nuValue in nuValues:
-                                                tempArg = (numSpot, tempData, bufferValue, zetaValue, doubleParkWeight, cruisingWeight, i, tauValue, rhoValue, nuValue) #, rhoValue, nuValue
+    #         for numVehicles in totalNumVehicles:
+    #             for truckProp in truckProps:
+    #                 numTruck = int(np.round(truckProp/100*numVehicles))
+    #                 numCar = numVehicles-numTruck
+    #                 baseData = simulateData(min(max(numCar, 0), numVehicles), min(max(numTruck, 0), numVehicles), nhts_data)
+    #                 #args = []
+    #                 for receivedDelta in receivedDeltas:
+    #                     tempData = apply_received_delta(baseData, receivedDelta)
+    #                     for doubleParkWeight in doubleParkWeights:
+    #                         cruisingWeight = 1-doubleParkWeight
+    #                         for tauValue in tauValues:
+    #                             for bufferValue in bufferValues:
+    #                                 for zetaValue in zetaValues:
+    #                                     for rhoValue in rhoValues:
+    #                                         for nuValue in nuValues:
+    #                                             tempArg = (numSpot, tempData, bufferValue, zetaValue, doubleParkWeight, cruisingWeight, i, tauValue, rhoValue, nuValue) #, rhoValue, nuValue
 
-                                                # if i == 8:
-                                                #     print('i = ' + str(i))
-                                                #runFullSetOfResults(*tempArg)
-                                                if (numSpot == 1 and doubleParkWeight == 100 and numVehicles == 77):
-                                                    args.append(tempArg)
-                                                else:
-                                                    args.append(tempArg)
-                                                    pass
-                                                i += 1
-                                                print(i)
+    #                                             # if i == 8:
+    #                                             #     print('i = ' + str(i))
+    #                                             #runFullSetOfResults(*tempArg)
+    #                                             if (numSpot == 1 and doubleParkWeight == 100 and numVehicles == 77):
+    #                                                 args.append(tempArg)
+    #                                             else:
+    #                                                 args.append(tempArg)
+    #                                                 pass
+    #                                             i += 1
+    #                                             print(i)
     
     current_date = date.today().strftime('%Y-%m-%d')                                            
 
@@ -105,7 +170,7 @@ def gen_vehicles_and_parameters(replications, numSpots, truckProps, nhts_data,
         saveFile = '/Users/connorforsythe/Library/CloudStorage/Box-Box/CMU/SmartCurbs/Results/' + str(current_date) + '_Args.dat'
         #current_date = 'Connor Result_'+current_date
     else:
-        saveFile = 'C:/Users/Aaron/Documents/GitHub/sliding_time_horizon_new/results/' + str(current_date) + '_Args_big_set.dat'
+        saveFile = 'C:/Users/Aaron/Documents/GitHub/sliding_time_horizon_new/results/' + str(current_date) + '_Args.dat'
         #current_date = 'Aaron Result_' + current_date    
 
 
@@ -133,22 +198,23 @@ def apply_received_delta(data, received_delta):
 if __name__ == '__main__':
 
     #numSpots = [1, 2, 5, 10, 25]
-    numSpots = [1, 2, 5, 10]
-    #numSpots = [1]
+    #numSpots = [1, 2, 5, 10, 15, 20, 25]
+    demand = [2]
+    numSpots = [1, 2, 5]
     # totalNumVehicles = list(range(11,78,11))
     # totalNumVehicles = [405]
     #doubleParkWeights = range(0, 101,25)
     doubleParkWeights = [1]
     bufferValues = [0]
     # bufferValues = [0]
-    tauValues = [30]
+    tauValues = [60]
     #zetaValues = [1,5]
-    zetaValues = [5, 10]
+    zetaValues = [5]
     truckProps = [100]
-    replications = 5 #added by Aaron
+    replications = 2 #added by Aaron
     windowShift = 10 #added by Aaron
-    rhoValues = [0, 60]
-    nuValues = [0, 60]
+    rhoValues = [0, 15]
+    nuValues = [0, 15]
     receivedDeltas = [-1, 300]# Aaron - this is the parameter that will enforce how early a request is received.
     #When receivedDelta < 0, the behavior will default to NHTS for cars and 30 minutes for truck
 
@@ -157,37 +223,56 @@ if __name__ == '__main__':
 
 
 
-    #execute worflow
-    
+    # #execute worflow
     nhts_data = load_nhts_data(windowShift)  #added windowShift
 
-    args = gen_vehicles_and_parameters(replications, numSpots, truckProps, nhts_data, receivedDeltas, doubleParkWeights, tauValues, bufferValues, zetaValues, rhoValues, nuValues)
+    args = gen_vehicles_and_parameters(replications, numSpots, demand, truckProps, 
+                                       nhts_data, receivedDeltas, doubleParkWeights, 
+                                       tauValues, bufferValues, zetaValues, rhoValues, nuValues)
 
     
-    numThreads = mp.cpu_count()-2
-    #numThreads = 4
+    numThreads = mp.cpu_count()-3
+    #numThreads = 1
     chunkSize = max(int(len(args)/numThreads), 1)
     np.random.shuffle(args)
     with Pool(numThreads) as pool:
         r = pool.starmap(runFullSetOfResults, args, chunksize=chunkSize)
         pool.close()
 
+    # for i in range(0, len(args)):
+    #     print(i)
+    #     run = args[i]
+    #     runFullSetOfResults(algo = run[0],
+    #                         scenario = run[1],
+    #                         numSpots = run[2],
+    #                         data = run[3],
+    #                         buffer = run[4],
+    #                         zeta = run[5],
+    #                         weightDoubleParking = run[6],
+    #                         weightCruising = run[7],
+    #                         received_delta = run[8],
+    #                         saveIndex = run[9],
+    #                         tau = run[10],
+    #                         rho = run[11],
+    #                         nu = run[12])
 
     #debugging workflow
-    # file = open('C:/Users/Aaron/Documents/GitHub/sliding_time_horizon_new/results/2023-12-15_Args.dat', 'rb')
+    # file = open('C:/Users/Aaron/Documents/GitHub/sliding_time_horizon_new/results/2023-12-20_Args.dat', 'rb')
     # args_reload = pickle.load(file)
     # file.close()
     # run = args_reload[176]
-    # outcomes = runFullSetOfResults(numSpots = run[0],
-    #                                data = run[1],
-    #                                buffer = run[2],
-    #                                zeta = run[3],
-    #                                weightDoubleParking = 1,
-    #                                weightCruising = run[5],
-    #                                saveIndex = run[6],
-    #                                tau = run[7],
-    #                                rho = run[8],
-    #                                nu = run[9])
+    # outcomes = runFullSetOfResults(algo = run[0],
+    #                                scenario = run[1],
+    #                                numSpots = run[2],
+    #                                 data = run[3],
+    #                                 buffer = run[4],
+    #                                 zeta = run[5],
+    #                                 weightDoubleParking = 1,
+    #                                 weightCruising = run[6],
+    #                                 saveIndex = run[7],
+    #                                 tau = run[8],
+    #                                 rho = run[9],
+    #                                 nu = run[10])
 
 
 
