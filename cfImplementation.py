@@ -561,6 +561,11 @@ def runSlidingOptimization(data, numSpaces, zeta=5, start=0, stop=(24*60)+1, buf
                 printFullModel(m)
 
             r.append(tempR)
+            
+            #added to break out of the sliding loop at the first instance of a time limit reach
+            if(m.status==9):
+                rFinal = collateFinalOutcomes(r)
+                return rFinal
 
 
     rFinal = collateFinalOutcomes(r)
@@ -761,6 +766,24 @@ def runFCFS(numSpots, data):
 
 
 def runFullSetOfResults(algo, scenario, numSpots, data, buffer, zeta, weightDoubleParking, weightCruising, received_delta, saveIndex=0, dataIndex=0, tau=0, rho=0, nu=0):
+    # #ChatGPT generated code for more robust saving of results
+    # # Determine the current date and format it
+    current_date = date.today().strftime('%Y-%m-%d') 
+
+    # Define the base path for saving files
+    if('connorforsythe' in os.getcwd()):
+        base_path = '/Users/connorforsythe/Library/CloudStorage/Box-Box/CMU/SmartCurbs/Results/'
+        current_date = current_date + '_Connor Result'
+    else:
+        base_path = 'C:/Users/Aaron/Documents/GitHub/sliding_time_horizon_new/results'
+        current_date = current_date + '_Aaron Result'
+
+    # Create a folder with the formatted date if it doesn't exist
+    folder_path = os.path.join(base_path, current_date)
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+    
+    
     r = {}
     
     r['OG_index'] = saveIndex
@@ -802,7 +825,7 @@ def runFullSetOfResults(algo, scenario, numSpots, data, buffer, zeta, weightDoub
             t2 = datetime.now()
             r['full'] = runSlidingOptimization(fullData, numSpots, zeta=fullZeta, buffer=buffer, tau = fulltau, #Aaron added fulltau
                                                weightDoubleParking=weightDoubleParking, weightCruising=weightCruising,
-                                               timeLimit=60)
+                                               timeLimit=120)
             t3 = datetime.now()
         except Exception as e:
             r['full'] = e
@@ -857,22 +880,7 @@ def runFullSetOfResults(algo, scenario, numSpots, data, buffer, zeta, weightDoub
 
 
 
-    # #ChatGPT generated code for more robust saving of results
-    # # Determine the current date and format it
-    current_date = date.today().strftime('%Y-%m-%d') 
 
-    # Define the base path for saving files
-    if('connorforsythe' in os.getcwd()):
-        base_path = '/Users/connorforsythe/Library/CloudStorage/Box-Box/CMU/SmartCurbs/Results/'
-        current_date = current_date + '_Connor Result'
-    else:
-        base_path = 'C:/Users/Aaron/Documents/GitHub/sliding_time_horizon_new/results'
-        current_date = current_date + '_Aaron Result'
-
-    # Create a folder with the formatted date if it doesn't exist
-    folder_path = os.path.join(base_path, current_date)
-    if not os.path.exists(folder_path):
-        os.makedirs(folder_path)
 
     # Define the file path for saving
     saveFile = os.path.join(folder_path, f'Res-{saveIndex}.dat')

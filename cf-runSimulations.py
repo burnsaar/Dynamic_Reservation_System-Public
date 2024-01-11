@@ -87,11 +87,11 @@ def gen_vehicles_and_parameters(replications, numSpots, demands, truckProps, nht
                             tempData = apply_received_delta(baseData, receivedDelta)
                             
                             if receivedDelta != -1: #we are at scenario #2
-                                tempArg = ('full', 'scenario 1', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 30, 0, 0) #append scenario #1
+                                tempArg = ('full', 'scenario 1', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 60, 0, 0) #append scenario #1
                                 args.append(tempArg)
                                 i += 1
                                 print(i) 
-                                tempArg = ('mpc','scenario 2', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 30, 0, 0) #append scenario #2
+                                tempArg = ('mpc','scenario 2', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 60, 0, 0) #append scenario #2
                                 args.append(tempArg)
                                 i += 1
                                 print(i) 
@@ -123,7 +123,113 @@ def gen_vehicles_and_parameters(replications, numSpots, demands, truckProps, nht
                         j += 1
                                 
                             
+def gen_vehicles_and_parameters_sensitivity(replications, numSpots, demands, truckProps, nhts_data,
+                                receivedDeltas, doubleParkWeights, tauValues,
+                                bufferValues, zetaValues, rhoValues, nuValues):
+    
+    args = []
+    i = 0 #counter for the args
+    j = 0 #counter for the basedata
+    for rep in range(0, replications):
+        for numSpot in numSpots:
+            for demand in demands:
+                totalNumVehicles = [demand*11*numSpot]
+                
+                for numVehicles in totalNumVehicles:
+                    for truckProp in truckProps:
+                        numTruck = int(np.round(truckProp/100*numVehicles))
+                        numCar = numVehicles-numTruck
+                        baseData = simulateData(min(max(numCar, 0), numVehicles), min(max(numTruck, 0), numVehicles), nhts_data)
                         
+                        tempArg = ('FCFS', 'Baseline FCFS', numSpot, baseData, 0, 5, 1, 0, 'N/A', i, j, 60, 0, 0) #run FCFS, scenario FCFS
+                        args.append(tempArg)
+                        i += 1
+                        
+                        for receivedDelta in receivedDeltas:
+                            tempData = apply_received_delta(baseData, receivedDelta)
+                            
+                            if receivedDelta != -1: #we are at scenario #2
+                                tempArg = ('full', 'Baseline FD', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 60, 0, 0) #append scenario #FD
+                                args.append(tempArg)
+                                i += 1
+                                print(i) 
+                                tempArg = ('mpc','scenario 1', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 60, 0, 0) #append scenario #1
+                                args.append(tempArg)
+                                i += 1
+                                print(i) 
+                                tempArg = ('mpc','scenario 1a', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 30, 0, 0) #append scenario #1a, change tau to 30
+                                args.append(tempArg)
+                                i += 1
+                                print(i) 
+                            else:
+                                #setup the tempData with 60 and 15 minutes receive deltas for the sensitivity cases
+                                tempData60 = apply_received_delta(baseData, 60)
+                                tempData15 = apply_received_delta(baseData, 15)
+                                
+                                tempArg = ('mpc', 'scenario 2', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 60, 0, 0) #append scenario #2
+                                args.append(tempArg)
+                                i += 1
+                                print(i) 
+                                tempArg = ('mpc', 'scenario 2a', numSpot, tempData60, 0, 5, 1, 0, receivedDelta, i, j, 60, 0, 0) #append scenario #2a,tempData60
+                                args.append(tempArg)
+                                i += 1
+                                print(i) 
+                                tempArg = ('mpc', 'scenario 2b', numSpot, tempData15, 0, 5, 1, 0, receivedDelta, i, j, 60, 0, 0) #append scenario #2b, tempData15
+                                args.append(tempArg)
+                                i += 1
+                                print(i) 
+                                
+                                tempArg = ('mpc', 'scenario 3', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 60, 15, 0) #append scenario #3
+                                args.append(tempArg)
+                                i += 1
+                                print(i) 
+                                tempArg = ('mpc', 'scenario 3a', numSpot, tempData60, 0, 5, 1, 0, receivedDelta, i, j, 60, 15, 0) #append scenario #3
+                                args.append(tempArg)
+                                i += 1
+                                print(i) 
+                                tempArg = ('mpc', 'scenario 3b', numSpot, tempData15, 0, 5, 1, 0, receivedDelta, i, j, 60, 15, 0) #append scenario #3
+                                args.append(tempArg)
+                                i += 1
+                                print(i) 
+                                
+                                tempArg = ('mpc', 'scenario 4', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 60, 15, 15) #append scenario #4
+                                args.append(tempArg)
+                                i += 1
+                                print(i) 
+                                tempArg = ('mpc', 'scenario 4a', numSpot, tempData60, 0, 5, 1, 0, receivedDelta, i, j, 60, 15, 15) #append scenario #4
+                                args.append(tempArg)
+                                i += 1
+                                print(i) 
+                                tempArg = ('mpc', 'scenario 4b', numSpot, tempData15, 0, 5, 1, 0, receivedDelta, i, j, 60, 15, 15) #append scenario #4
+                                args.append(tempArg)
+                                i += 1
+                                print(i) 
+                                
+                                r_i = np.subtract(tempData.loc[:,  'a_i_OG'], tempData.loc[:, 'Received'])
+                                tempArg = ('mpc', 'scenario 5', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 60, r_i, r_i) #append scenario #5
+                                args.append(tempArg)
+                                i += 1
+                                print(i) 
+                                tempArg = ('mpc', 'scenario 5a', numSpot, tempData60, 0, 5, 1, 0, receivedDelta, i, j, 60, r_i, r_i) #append scenario #5
+                                args.append(tempArg)
+                                i += 1
+                                print(i) 
+                                #do not need a scenarion 5b b/c r_i, pho, nu = 15 is covered by scenario 4b
+                                
+                                tempArg = ('mpc', 'scenario 6', numSpot, tempData, 5, 5, 1, 0, receivedDelta, i, j, 60, r_i, r_i) #append scenario #6
+                                args.append(tempArg)
+                                i += 1
+                                print(i) 
+                                tempArg = ('mpc', 'scenario 6a', numSpot, tempData60, 5, 5, 1, 0, receivedDelta, i, j, 60, r_i, r_i) #append scenario #6
+                                args.append(tempArg)
+                                i += 1
+                                print(i) 
+                                tempArg = ('mpc', 'scenario 6b', numSpot, tempData15, 5, 5, 1, 0, receivedDelta, i, j, 60, r_i, r_i) #append scenario #6
+                                args.append(tempArg)
+                                i += 1
+                                print(i) 
+                                
+                        j += 1
                         
                
     
@@ -199,8 +305,10 @@ if __name__ == '__main__':
 
     #numSpots = [1, 2, 5, 10, 25]
     #numSpots = [1, 2, 5, 10, 15, 20, 25]
-    demand = [2]
-    numSpots = [1, 2, 5]
+    #demand = [1, 2, 3, 4, 7]
+    demand = [1]
+    numSpots = [1, 2, 5, 20, 50, 100]
+    #numSpots = [20]
     # totalNumVehicles = list(range(11,78,11))
     # totalNumVehicles = [405]
     #doubleParkWeights = range(0, 101,25)
@@ -211,7 +319,7 @@ if __name__ == '__main__':
     #zetaValues = [1,5]
     zetaValues = [5]
     truckProps = [100]
-    replications = 2 #added by Aaron
+    replications = 5 #added by Aaron
     windowShift = 10 #added by Aaron
     rhoValues = [0, 15]
     nuValues = [0, 15]
@@ -226,18 +334,33 @@ if __name__ == '__main__':
     # #execute worflow
     nhts_data = load_nhts_data(windowShift)  #added windowShift
 
-    args = gen_vehicles_and_parameters(replications, numSpots, demand, truckProps, 
+    # args = gen_vehicles_and_parameters(replications, numSpots, demand, truckProps, 
+    #                                    nhts_data, receivedDeltas, doubleParkWeights, 
+    #                                    tauValues, bufferValues, zetaValues, rhoValues, nuValues)
+    
+    args = gen_vehicles_and_parameters_sensitivity(replications, numSpots, demand, truckProps, 
                                        nhts_data, receivedDeltas, doubleParkWeights, 
                                        tauValues, bufferValues, zetaValues, rhoValues, nuValues)
 
     
-    numThreads = mp.cpu_count()-3
-    #numThreads = 1
+    numThreads = mp.cpu_count()-2
+    #numThreads = 2
     chunkSize = max(int(len(args)/numThreads), 1)
     np.random.shuffle(args)
     with Pool(numThreads) as pool:
         r = pool.starmap(runFullSetOfResults, args, chunksize=chunkSize)
         pool.close()
+    
+    # #when the pooling isn't running do the below
+    # scenario = 0
+    # for arg in args:
+    #     print('scenario: ' + str(scenario))
+    #     runFullSetOfResults(arg[0], arg[1], arg[2], arg[3], arg[4], arg[5], arg[6], arg[7], arg[8], arg[9], arg[10], arg[11], arg[12], arg[13])
+    #     scenario +=1
+
+
+
+
 
     # for i in range(0, len(args)):
     #     print(i)

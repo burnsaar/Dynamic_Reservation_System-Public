@@ -110,18 +110,19 @@ def extract_run_params(data):
         weightCruising.append(run['spec']['weightCruising'])
         weightDblPark.append(run['spec']['weightDoubleParking'])
         zeta.append(run['spec']['zeta'])
-        if algo == 'FCFS':
+        if run['spec']['algo'] == 'FCFS':
             numVeh.append(len(run['FCFS']))
-        elif algo == 'full':
+        elif run['spec']['algo'] == 'full':
             numVeh.append(len(run['full']))
-        elif algo == 'sliding':
+        elif run['spec']['algo'] == 'mpc':
             numVeh.append(len(run['sliding']))
         tau.append(run['spec']['tau'])
         rho.append(run['spec']['rho'])
         nu.append(run['spec']['nu'])
         received_delta.append(run['spec']['received_delta'])
-        run_params = pd.DataFrame(list(zip(algo, numSpots, numVeh, zeta, buffer, weightDblPark, weightCruising, tau, rho, nu, received_delta)),
-                                  columns = ['algo','numSpots', 'numVeh', 'zeta', 'buffer', 'weightDblPark', 'weightCruising', 'tau', 'rho', 'nu', 'received_delta'])
+        
+    run_params = pd.DataFrame(list(zip(algo, numSpots, numVeh, zeta, buffer, weightDblPark, weightCruising, tau, rho, nu, received_delta)),
+                              columns = ['algo','numSpots', 'numVeh', 'zeta', 'buffer', 'weightDblPark', 'weightCruising', 'tau', 'rho', 'nu', 'received_delta'])
     
     return run_params
 
@@ -129,18 +130,27 @@ def plot_unassigned(data):
     FCFS_data = []
     FCFS_data_idx = []
     FCFS_unassigned = []
+    FCFS_numspaces = []
+    FCFS_scenario = []
+    FCFS_numVehicles = []
     full_data = []
     full_data_idx = []
     full_unassigned = []
     sliding_data = []
     sliding_data_idx = []
     sliding_unassigned = []
+    sliding_numspaces = []
+    sliding_scenario = []
+    sliding_numVehicles = []
     
     for item in data:
         if isinstance(item['FCFS'], pd.DataFrame):
             FCFS_data.append(item)
             FCFS_data_idx.append(item['spec']['data_index'])
             FCFS_unassigned.append(item['FCFS-unassigned'])
+            FCFS_numspaces.append(item['spec']['numSpots'])
+            FCFS_scenario.append(item['spec']['scenario'])
+            FCFS_numVehicles.append(item['spec']['numVehicles'])
         if isinstance(item['full'], pd.DataFrame):
             full_data.append(item)
             full_data_idx.append(item['spec']['data_index'])
@@ -149,15 +159,18 @@ def plot_unassigned(data):
             sliding_data.append(item)
             sliding_data_idx.append(item['spec']['data_index'])
             sliding_unassigned.append(item['sliding-unassigned'])
+            sliding_numspaces.append(item['spec']['numSpots'])
+            sliding_scenario.append(item['spec']['scenario'])
+            sliding_numVehicles.append(item['spec']['numVehicles'])
             
-    d = {'data_idx': FCFS_data_idx, 'FCFS_unassigned': FCFS_unassigned}
+    d = {'data_idx': FCFS_data_idx, 'FCFS_unassigned': FCFS_unassigned, 'FCFS_numSpots': FCFS_numspaces, 'FCFS_scenario': FCFS_scenario, 'FCFS_numVehicles': FCFS_numVehicles}
     FCFS_df = pd.DataFrame(d)
     d = {'data_idx': full_data_idx, 'full_unassigned': full_unassigned}
     full_df = pd.DataFrame(d)
-    d = {'data_idx': sliding_data_idx, 'sliding_unassigned': sliding_unassigned}
+    d = {'data_idx': sliding_data_idx, 'sliding_unassigned': sliding_unassigned, 'sliding_numSpots': sliding_numspaces, 'sliding_scenario': sliding_scenario, 'sliding_numVehicles': sliding_numVehicles}
     sliding_df = pd.DataFrame(d)
     
-    full_df.drop(0, inplace = True)
+    #full_df.drop(0, inplace = True) #not sure why doing this?
 
     plt.figure()
     plt.scatter(FCFS_data_idx, FCFS_unassigned, label = 'FCFS')
@@ -181,6 +194,7 @@ def plot_unassigned(data):
     # diff_FCFS_MPC = np.subtract(FCFS_unassigned, MPC_unassigned)
     # diff_MPC_Full = np.subtract(MPC_unassigned, Full_unassigned)
     
+    plt.figure()
     plt.scatter(x = FCFS_full_df['data_idx'], y = FCFS_full_df['diff'], label = 'FCFS-Full')
     plt.scatter(x = FCFS_MPC_df['data_idx'], y = FCFS_MPC_df['diff'], label = 'FCFS-MPC')
     plt.scatter(x = MPC_full_df['data_idx'], y = MPC_full_df['diff'], label = 'MPC-Full')
@@ -191,7 +205,7 @@ def plot_unassigned(data):
     plt.show()
     
 
-    return FCFS_df, full_df, sliding_df, FCFS_data, full_data, sliding_data
+    return FCFS_df, full_df, sliding_df, FCFS_data, full_data, sliding_data, FCFS_full_df, FCFS_MPC_df, MPC_full_df
 
 def get_analysis_data(run_params_complete, FCFS_unassigned, Full_unassigned,
                                   MPC_unassigned, diff_FCFS_Full, diff_FCFS_MPC, diff_MPC_Full):
@@ -383,7 +397,7 @@ def create_boxplots(analysis_data):
 
 
 
-def extract_plot_data(completed_data):
+def extract_plot_data_spaces(completed_data):
     df = pd.DataFrame(columns = ['numSpots', 'unassigned minutes', 'scenario']) #item['FCFS-unassigned']-
     
     for item in completed_data:
@@ -414,34 +428,203 @@ def extract_plot_data(completed_data):
     
     return df, df_log
 
-def gen_plots(df, log = False):
+def extract_plot_data_spaces_sensitivity(completed_data):
+    df = pd.DataFrame(columns = ['numSpots', 'unassigned minutes', 'scenario']) #item['FCFS-unassigned']-
+    
+    for item in completed_data:
+        if isinstance(item['FCFS'], pd.DataFrame):
+            df.loc[len(df)] = [item['spec']['numSpots'], item['FCFS-unassigned'], 'FCFS'] #scenario #0
+        
+        if isinstance(item['full'], pd.DataFrame):
+            df.loc[len(df)] = [item['spec']['numSpots'], item['full-unassigned'], 'Full-Day'] #scenario #1
+        
+        if isinstance(item['sliding'], pd.DataFrame):
+            if (item['spec']['scenario'] == 'scenario 1'): 
+                df.loc[len(df)] = [item['spec']['numSpots'], item['sliding-unassigned'], 'scenario 1']
+            elif (item['spec']['scenario'] == 'scenario 1a'): 
+                df.loc[len(df)] = [item['spec']['numSpots'], item['sliding-unassigned'], 'scenario 1a']
+            elif (item['spec']['scenario'] == 'scenario 2'): 
+                df.loc[len(df)] = [item['spec']['numSpots'], item['sliding-unassigned'], 'scenario 2']
+            elif (item['spec']['scenario'] == 'scenario 2a'): 
+                df.loc[len(df)] = [item['spec']['numSpots'], item['sliding-unassigned'], 'scenario 2a']
+            elif (item['spec']['scenario'] == 'scenario 2b'): 
+                df.loc[len(df)] = [item['spec']['numSpots'], item['sliding-unassigned'], 'scenario 2b']
+            elif (item['spec']['scenario'] == 'scenario 3'): 
+                df.loc[len(df)] = [item['spec']['numSpots'], item['sliding-unassigned'], 'scenario 3']
+            elif (item['spec']['scenario'] == 'scenario 3a'): 
+                df.loc[len(df)] = [item['spec']['numSpots'], item['sliding-unassigned'], 'scenario 3a']
+            elif (item['spec']['scenario'] == 'scenario 3b'): 
+                df.loc[len(df)] = [item['spec']['numSpots'], item['sliding-unassigned'], 'scenario 3b']
+            elif (item['spec']['scenario'] == 'scenario 4'): 
+                df.loc[len(df)] = [item['spec']['numSpots'], item['sliding-unassigned'], 'scenario 4']
+            elif (item['spec']['scenario'] == 'scenario 4a'): 
+                df.loc[len(df)] = [item['spec']['numSpots'], item['sliding-unassigned'], 'scenario 4a']
+            elif (item['spec']['scenario'] == 'scenario 4b'): 
+                df.loc[len(df)] = [item['spec']['numSpots'], item['sliding-unassigned'], 'scenario 4b']
+            elif (item['spec']['scenario'] == 'scenario 5'): 
+                df.loc[len(df)] = [item['spec']['numSpots'], item['sliding-unassigned'], 'scenario 5']
+            elif (item['spec']['scenario'] == 'scenario 5a'): 
+                df.loc[len(df)] = [item['spec']['numSpots'], item['sliding-unassigned'], 'scenario 5a']
+            elif (item['spec']['scenario'] == 'scenario 6'): 
+                df.loc[len(df)] = [item['spec']['numSpots'], item['sliding-unassigned'], 'scenario 6']
+            elif (item['spec']['scenario'] == 'scenario 6a'): 
+                df.loc[len(df)] = [item['spec']['numSpots'], item['sliding-unassigned'], 'scenario 6a']
+            elif (item['spec']['scenario'] == 'scenario 6b'): 
+                df.loc[len(df)] = [item['spec']['numSpots'], item['sliding-unassigned'], 'scenario 6b']
+                
+    df.sort_values(['scenario'], inplace = True)
+    
+    df_log = df.copy(deep = True)
+    df_log['unassigned minutes'] = np.log(df_log['unassigned minutes'])
+    
+    return df, df_log
+
+def extract_plot_data_demand(completed_data):
+    df = pd.DataFrame(columns = ['demand', 'unassigned minutes', 'scenario']) #item['FCFS-unassigned']-
+    
+    for item in completed_data:
+        if isinstance(item['FCFS'], pd.DataFrame):
+            df.loc[len(df)] = [item['spec']['numVehicles']/item['spec']['numSpots']/11, item['FCFS-unassigned'], 'FCFS'] #scenario #0
+        
+        if isinstance(item['full'], pd.DataFrame):
+            df.loc[len(df)] = [item['spec']['numVehicles']/item['spec']['numSpots']/11, item['full-unassigned'], 'Full-Day'] #scenario #1
+        
+        if isinstance(item['sliding'], pd.DataFrame):
+            if (item['spec']['scenario'] == 'scenario 2'): #scenario #2
+                df.loc[len(df)] = [item['spec']['numVehicles']/item['spec']['numSpots']/11, item['sliding-unassigned'], 'scenario 2']
+            elif (item['spec']['scenario'] == 'scenario 3'): #scenario #3
+                df.loc[len(df)] = [item['spec']['numVehicles']/item['spec']['numSpots']/11, item['sliding-unassigned'], 'scenario 3']
+            elif (item['spec']['scenario'] == 'scenario 4'): #scenario #4
+                df.loc[len(df)] = [item['spec']['numVehicles']/item['spec']['numSpots']/11, item['sliding-unassigned'], 'scenario 4']
+            elif (item['spec']['scenario'] == 'scenario 5'): #scenario #5
+                df.loc[len(df)] = [item['spec']['numVehicles']/item['spec']['numSpots']/11, item['sliding-unassigned'], 'scenario 5']
+            elif (item['spec']['scenario'] == 'scenario 6'): #scenario #6
+                df.loc[len(df)] = [item['spec']['numVehicles']/item['spec']['numSpots']/11, item['sliding-unassigned'], 'scenario 6']
+            elif (item['spec']['scenario'] == 'scenario 7'): #scenario #7
+                df.loc[len(df)] = [item['spec']['numVehicles']/item['spec']['numSpots']/11, item['sliding-unassigned'], 'scenario 7']
+                
+    df.sort_values(['scenario'], inplace = True)
+    
+    df_log = df.copy(deep = True)
+    df_log['unassigned minutes'] = np.log(df_log['unassigned minutes'])
+    
+    return df, df_log
+
+def extract_plot_data_demand_sensitivity(completed_data):
+    df = pd.DataFrame(columns = ['numSpots', 'unassigned minutes', 'scenario']) #item['FCFS-unassigned']-
+    
+    for item in completed_data:
+        if isinstance(item['FCFS'], pd.DataFrame):
+            df.loc[len(df)] = [item['spec']['numVehicles']/item['spec']['numSpots']/11, item['FCFS-unassigned'], 'FCFS'] #scenario #0
+        
+        if isinstance(item['full'], pd.DataFrame):
+            df.loc[len(df)] = [item['spec']['numVehicles']/item['spec']['numSpots']/11, item['full-unassigned'], 'Full-Day'] #scenario #1
+        
+        if isinstance(item['sliding'], pd.DataFrame):
+            if (item['spec']['scenario'] == 'scenario 1'): 
+                df.loc[len(df)] = [item['spec']['numVehicles']/item['spec']['numSpots']/11, item['sliding-unassigned'], 'scenario 1']
+            elif (item['spec']['scenario'] == 'scenario 1a'): 
+                df.loc[len(df)] = [item['spec']['numVehicles']/item['spec']['numSpots']/11, item['sliding-unassigned'], 'scenario 1a']
+            elif (item['spec']['scenario'] == 'scenario 2'): 
+                df.loc[len(df)] = [item['spec']['numVehicles']/item['spec']['numSpots']/11, item['sliding-unassigned'], 'scenario 2']
+            elif (item['spec']['scenario'] == 'scenario 2a'): 
+                df.loc[len(df)] = [item['spec']['numVehicles']/item['spec']['numSpots']/11, item['sliding-unassigned'], 'scenario 2a']
+            elif (item['spec']['scenario'] == 'scenario 2b'): 
+                df.loc[len(df)] = [item['spec']['numVehicles']/item['spec']['numSpots']/11, item['sliding-unassigned'], 'scenario 2b']
+            elif (item['spec']['scenario'] == 'scenario 3'): 
+                df.loc[len(df)] = [item['spec']['numVehicles']/item['spec']['numSpots']/11, item['sliding-unassigned'], 'scenario 3']
+            elif (item['spec']['scenario'] == 'scenario 3a'): 
+                df.loc[len(df)] = [item['spec']['numVehicles']/item['spec']['numSpots']/11, item['sliding-unassigned'], 'scenario 3a']
+            elif (item['spec']['scenario'] == 'scenario 3b'): 
+                df.loc[len(df)] = [item['spec']['numVehicles']/item['spec']['numSpots']/11, item['sliding-unassigned'], 'scenario 3b']
+            elif (item['spec']['scenario'] == 'scenario 4'): 
+                df.loc[len(df)] = [item['spec']['numVehicles']/item['spec']['numSpots']/11, item['sliding-unassigned'], 'scenario 4']
+            elif (item['spec']['scenario'] == 'scenario 4a'): 
+                df.loc[len(df)] = [item['spec']['numVehicles']/item['spec']['numSpots']/11, item['sliding-unassigned'], 'scenario 4a']
+            elif (item['spec']['scenario'] == 'scenario 4b'): 
+                df.loc[len(df)] = [item['spec']['numVehicles']/item['spec']['numSpots']/11, item['sliding-unassigned'], 'scenario 4b']
+            elif (item['spec']['scenario'] == 'scenario 5'): 
+                df.loc[len(df)] = [item['spec']['numVehicles']/item['spec']['numSpots']/11, item['sliding-unassigned'], 'scenario 5']
+            elif (item['spec']['scenario'] == 'scenario 5a'): 
+                df.loc[len(df)] = [item['spec']['numVehicles']/item['spec']['numSpots']/11, item['sliding-unassigned'], 'scenario 5a']
+            elif (item['spec']['scenario'] == 'scenario 6'): 
+                df.loc[len(df)] = [item['spec']['numVehicles']/item['spec']['numSpots']/11, item['sliding-unassigned'], 'scenario 6']
+            elif (item['spec']['scenario'] == 'scenario 6a'): 
+                df.loc[len(df)] = [item['spec']['numVehicles']/item['spec']['numSpots']/11, item['sliding-unassigned'], 'scenario 6a']
+            elif (item['spec']['scenario'] == 'scenario 6b'): 
+                df.loc[len(df)] = [item['spec']['numVehicles']/item['spec']['numSpots']/11, item['sliding-unassigned'], 'scenario 6b']
+                
+    df.sort_values(['scenario'], inplace = True)
+    
+    df_log = df.copy(deep = True)
+    df_log['unassigned minutes'] = np.log(df_log['unassigned minutes'])
+    
+    return df, df_log
+
+def gen_plots_spaces(df, log = False):
     if log == False:
         plt.figure()
-        sns.lineplot(data = df, x = 'numSpots', y = 'unassigned minutes', hue = 'scenario') #, err_style = 'bars'
+        sns.lineplot(data = df, x = 'numSpots', y = 'unassigned minutes', hue = 'scenario', style = 'scenario') #, err_style = 'bars'
+        plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
         plt.figure()
-        sns.lineplot(data = df, x = 'numSpots', y = 'unassigned minutes', hue = 'scenario', err_style = 'bars') #, err_style = 'bars'
+        sns.lineplot(data = df, x = 'numSpots', y = 'unassigned minutes', hue = 'scenario', style = 'scenario', err_style = 'bars') #, err_style = 'bars'
+        plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
         plt.figure()
         sns.boxplot(data = df, x = 'numSpots', y = 'unassigned minutes', hue = 'scenario')
+        plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
         plt.figure()
         sns.stripplot(data = df, x = 'numSpots', y = 'unassigned minutes', hue = 'scenario')
+        plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     else:
         plt.figure()
-        sns.lineplot(data = df, x = 'numSpots', y = 'unassigned minutes', hue = 'scenario') #, err_style = 'bars'
+        sns.lineplot(data = df, x = 'numSpots', y = 'unassigned minutes', hue = 'scenario', style = 'scenario') #, err_style = 'bars'
         plt.ylabel('log unassigned minutes')
+        plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
         plt.figure()
-        sns.lineplot(data = df, x = 'numSpots', y = 'unassigned minutes', hue = 'scenario', err_style = 'bars') #, err_style = 'bars'
+        sns.lineplot(data = df, x = 'numSpots', y = 'unassigned minutes', hue = 'scenario', err_style = 'bars', style = 'scenario') #, err_style = 'bars'
         plt.ylabel('log unassigned minutes')
+        plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
         plt.figure()
         sns.boxplot(data = df, x = 'numSpots', y = 'unassigned minutes', hue = 'scenario')
         plt.ylabel('log unassigned minutes')
+        plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
         plt.figure()
         sns.stripplot(data = df, x = 'numSpots', y = 'unassigned minutes', hue = 'scenario')
+        plt.ylabel('log unassigned minutes')
+        plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    return
+
+def gen_plots_demand(df, log = False):
+    if log == False:
+        plt.figure()
+        sns.lineplot(data = df, x = 'demand', y = 'unassigned minutes', hue = 'scenario') #, err_style = 'bars'
+        plt.figure()
+        sns.lineplot(data = df, x = 'demand', y = 'unassigned minutes', hue = 'scenario', err_style = 'bars') #, err_style = 'bars'
+        plt.figure()
+        sns.boxplot(data = df, x = 'demand', y = 'unassigned minutes', hue = 'scenario')
+        plt.figure()
+        sns.stripplot(data = df, x = 'demand', y = 'unassigned minutes', hue = 'scenario')
+    else:
+        plt.figure()
+        sns.lineplot(data = df, x = 'demand', y = 'unassigned minutes', hue = 'scenario') #, err_style = 'bars'
+        plt.ylabel('log unassigned minutes')
+        plt.figure()
+        sns.lineplot(data = df, x = 'demand', y = 'unassigned minutes', hue = 'scenario', err_style = 'bars') #, err_style = 'bars'
+        plt.ylabel('log unassigned minutes')
+        plt.figure()
+        sns.boxplot(data = df, x = 'demand', y = 'unassigned minutes', hue = 'scenario')
+        plt.ylabel('log unassigned minutes')
+        plt.figure()
+        sns.stripplot(data = df, x = 'demand', y = 'unassigned minutes', hue = 'scenario')
         plt.ylabel('log unassigned minutes')
     return
 
+
+
+
 if __name__ == '__main__':
     plt.rcParams['figure.dpi'] = 500
-    file_path = 'C:/Users/Aaron/Documents/GitHub/sliding_time_horizon_new/results/2023-12-31_Aaron Result/*.dat'
+    file_path = 'C:/Users/Aaron/Documents/GitHub/sliding_time_horizon_new/results/2024-01-10_Aaron Result_spaces_demand_1_sensi/*.dat'
     files = load_data(file_path)
     res = parse_data(files)
     data, FullFailure_ls, MPCFailure_ls = del_incomplete_runs(res)
@@ -451,13 +634,25 @@ if __name__ == '__main__':
     run_params_complete = extract_run_params(completed_data)
 
     ############ debug checks through graphics
-    FCFS_df, full_df, sliding_df, FCFS_data, full_data, sliding_data = plot_unassigned(completed_data)
+    FCFS_df, full_df, sliding_df, FCFS_data, full_data, sliding_data, FCFS_full_df, FCFS_MPC_df, MPC_full_df = plot_unassigned(completed_data)
 
     ############ Graphic generation
-    df, df_log = extract_plot_data(completed_data)
     
-    gen_plots(df)
-    gen_plots(df_log, log = True)
+    #graphics exploring a range of parking spaces
+    #df, df_log = extract_plot_data_spaces(completed_data)
+    
+    df, df_log = extract_plot_data_spaces_sensitivity(completed_data)
+    
+    gen_plots_spaces(df)
+    gen_plots_spaces(df_log, log = True)
+    
+    #graphics exploring a range in demand
+    # df, df_log = extract_plot_data_demand(completed_data)
+    
+    # df, df_log = extract_plot_data_demand_sensitivity(completed_data)
+    
+    # gen_plots_demand(df)
+    # gen_plots_demand(df_log, log = True)
     
     
     #plt.ylabel('redux unassigned minutes')
@@ -466,17 +661,20 @@ if __name__ == '__main__':
 
 
 
+# FCFS_MPC_df_step6 = FCFS_MPC_df[FCFS_MPC_df['sliding_scenario'] == 'scenario 6']
+# #FCFS_MPC_df_step6['numVehicles'] = random.random()#FCFS_MPC_df_step6['sliding_numSpots']*11*2
+# fig = plt.figure(figsize = (6,4)) #winner
+# ax = plt.tricontour(FCFS_MPC_df_step6['sliding_numSpots'], FCFS_MPC_df_step6['sliding_numVehicles'], FCFS_MPC_df_step6['diff'], cmap = 'rainbow')
+# cb = fig.colorbar(ax)
+# # plt.title('Reduction in Cruising, FCFS and MPC\n(minutes)')
+# # plt.xlabel('Hourly Demand\n(Vehicles per Parking Space per Hour)')
+# # plt.xticks([1,2,3])
+# # plt.xlim([0.9, 3.1])
+# # plt.ylabel('Weight Double Parking')
+# # plt.ylim([-0.05, 1.05])
+# plt.legend()
 
 
-
-# ############ Graphic Generation Below   
-
-# analysis_data = get_analysis_data(run_params_complete, FCFS_unassigned, Full_unassigned,
-#                                   MPC_unassigned, diff_FCFS_Full, diff_FCFS_MPC, diff_MPC_Full)
-
-# create_boxplots(analysis_data)
-
-    
 
 
 
