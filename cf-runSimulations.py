@@ -308,7 +308,7 @@ if __name__ == '__main__':
     #demand = [1, 2, 3, 4, 7]
     demand = [1]
     numSpots = [1, 2, 5, 20, 50, 100]
-    #numSpots = [20]
+    numSpots = [1,20,100]
     # totalNumVehicles = list(range(11,78,11))
     # totalNumVehicles = [405]
     #doubleParkWeights = range(0, 101,25)
@@ -334,13 +334,13 @@ if __name__ == '__main__':
     # #execute worflow
     nhts_data = load_nhts_data(windowShift)  #added windowShift
 
-    # args = gen_vehicles_and_parameters(replications, numSpots, demand, truckProps, 
+    args = gen_vehicles_and_parameters(replications, numSpots, demand, truckProps, 
+                                        nhts_data, receivedDeltas, doubleParkWeights, 
+                                        tauValues, bufferValues, zetaValues, rhoValues, nuValues)
+    
+    # args = gen_vehicles_and_parameters_sensitivity(replications, numSpots, demand, truckProps, 
     #                                    nhts_data, receivedDeltas, doubleParkWeights, 
     #                                    tauValues, bufferValues, zetaValues, rhoValues, nuValues)
-    
-    args = gen_vehicles_and_parameters_sensitivity(replications, numSpots, demand, truckProps, 
-                                       nhts_data, receivedDeltas, doubleParkWeights, 
-                                       tauValues, bufferValues, zetaValues, rhoValues, nuValues)
 
     
     numThreads = mp.cpu_count()-2
