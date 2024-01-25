@@ -7,4 +7,4 @@ Data/NHTS/csv/vehpub.csv
 __pycache__/*
 *.dat
 *.lp
-*debug
+debug/
