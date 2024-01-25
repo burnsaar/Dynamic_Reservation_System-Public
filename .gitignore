@@ -5,3 +5,5 @@ Data/NHTS/csv/perpub.csv
 Data/NHTS/csv/trippub.csv
 Data/NHTS/csv/vehpub.csv
 __pycache__/*
+*.dat
+*.lp
