@@ -373,8 +373,8 @@ def getPastInfo(outcomeList, currentTime):
     # Collect shared indices
     indices = list(data.index)
 
-    print('lol')
-    print(indices)
+    #print('lol')
+    #print(indices)
 
     #Get relevant x outcomes and the difference across iterations
     x = outcomeList[-1]['x']
@@ -383,8 +383,8 @@ def getPastInfo(outcomeList, currentTime):
     t = outcomeList[-1]['t']
 
     sumRowX = x.sum(axis=1)
-    print(sumRowX)
-    print(t)
+    #print(sumRowX)
+    #print(t)
 
     r = {}
     r['time'] = dict(zip(indices, t))
@@ -462,9 +462,9 @@ def runSlidingOptimization(data, numSpaces, zeta=5, start=0, stop=(24*60)+1, buf
     iterVar = trange(max(start, min(data.loc[:, 'Received'])), stop, zeta)
     pastInfo = None
     for j in iterVar:
-        print(j)
-        if j >= 575:  #850  #660 #720
-            print(stop)
+        # print(j)
+        # if j >= 575:  #850  #660 #720
+        #     print(stop)
 
         if (len(r) > 1):
             pastInfo = getPastInfo(r, j)
@@ -506,7 +506,6 @@ def runSlidingOptimization(data, numSpaces, zeta=5, start=0, stop=(24*60)+1, buf
             m, x_i_j = createSingleAssignmentConstraints(m, x_i_j, tempData)
             m, t_i, x_i_j = createTimeOverlapConstraints(m, t_i, x_i_j, tempData, buffer=buffer)
             m, t_i = createTimeWindowConstraints(m, t_i, tempData)
-            m, t_i, x_i_j = createTimeShiftConstraints(m, t_i, x_i_j, tempData)
             m = setModelParams(m, TimeLimit=timeLimit, MIPGap=0.01, ModelSense=GRB.MINIMIZE, Threads=1)
             doubleParkObj = getDoubleParkExpression(tempData, x_i_j)
             cruisingObj = getExpectedCruisingExpression(tempData, x_i_j) #Aaron changed data to tempData
@@ -517,11 +516,14 @@ def runSlidingOptimization(data, numSpaces, zeta=5, start=0, stop=(24*60)+1, buf
 
 
             t0 = m.status
+            print("\nInitializing Optimization")
+            print("Spaces = " + str(numSpaces) + " Vehicles = " + str(len(tempData)) + "\n")
             m.optimize()
             m.update()
             print('Termination Code: {}'.format(m.status))
+            
             if m.status != 2:
-                print(stop)
+                print('stop')
                 print('{} Termination Code for Run {}'.format(m.status, saveID))
                 # printFullModel(m)
                 m.write('debug/debug run-{}-status code-{}.lp'.format(saveID, m.status))
@@ -825,7 +827,7 @@ def runFullSetOfResults(algo, scenario, numSpots, data, buffer, zeta, weightDoub
             t2 = datetime.now()
             r['full'] = runSlidingOptimization(fullData, numSpots, zeta=fullZeta, buffer=buffer, tau = fulltau, #Aaron added fulltau
                                                weightDoubleParking=weightDoubleParking, weightCruising=weightCruising,
-                                               timeLimit=120)
+                                               timeLimit=10)
             t3 = datetime.now()
         except Exception as e:
             r['full'] = e
@@ -849,14 +851,14 @@ def runFullSetOfResults(algo, scenario, numSpots, data, buffer, zeta, weightDoub
             t4 = datetime.now()
             r['sliding'] = runSlidingOptimization(deepcopy(data), numSpots, zeta=zeta, buffer=buffer,
                                                   weightDoubleParking=weightDoubleParking, weightCruising=weightCruising,
-                                                  timeLimit=30, tau=tau, returnBoth=False, saveID=saveIndex, rho=rho, nu=nu)
+                                                  timeLimit=1, tau=tau, returnBoth=False, saveID=saveIndex, rho=rho, nu=nu)
             t5 = datetime.now()
         except Exception as e:
             r['sliding'] = e
             t4 = datetime.now()
             r['sliding'] = runSlidingOptimization(deepcopy(data), numSpots, zeta=zeta, buffer=buffer,
                                                   weightDoubleParking=weightDoubleParking, weightCruising=weightCruising,
-                                                  timeLimit=30, tau=tau, returnBoth=True, saveID=saveIndex, rho=rho, nu=nu)
+                                                  timeLimit=1, tau=tau, returnBoth=True, saveID=saveIndex, rho=rho, nu=nu)
             t5 = datetime.now()
     
         try:

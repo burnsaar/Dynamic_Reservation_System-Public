@@ -32,8 +32,8 @@ def parse_data(files):
 def del_incomplete_runs(res):
     FullFailure_ls = []
     Full_idx = []
-    MPCFailure_ls = []
-    MPC_idx = []
+    SWFailure_ls = []
+    SW_idx = []
     data = []
     data_idx = []
     
@@ -45,8 +45,8 @@ def del_incomplete_runs(res):
             #Full_idx.append(index)
         if type(item['sliding']) is AttributeError:
             item['res_idx'] = index
-            MPCFailure_ls.append(item)
-            #MPC_idx.append(index)
+            SWFailure_ls.append(item)
+            #SW_idx.append(index)
         if type(item['full-unassigned']) is not AttributeError and type(item['sliding']) is not AttributeError:
             item['res_idx'] = index
             data.append(item)
@@ -54,14 +54,14 @@ def del_incomplete_runs(res):
                 
         index += 1
                 
-    return data, FullFailure_ls, MPCFailure_ls
+    return data, FullFailure_ls, SWFailure_ls
 
 def del_failed_runs(data):
     Full_status_error = []
     Full_status_9 = []
     
-    MPC_status_error = []
-    MPC_status_9 = []
+    SW_status_error = []
+    SW_status_9 = []
     
     completed_data = []
     
@@ -80,15 +80,15 @@ def del_failed_runs(data):
         
         if isinstance(item['sliding'], pd.DataFrame):
             if 'StatusCode' in item['sliding'].columns:
-                MPC_status_error.append(item)
-                if item['sliding']['StatusCode'].any() == 9: #TODO: fix this to check if any entry is a 9
-                    MPC_status_9.append(item)
+                SW_status_error.append(item)
+                if item['sliding']['StatusCode'].isin([9]).any():
+                    SW_status_9.append(item)
             else:
                 completed_data.append(item)
  
         idx += 1
     
-    return completed_data, Full_status_error, Full_status_9, MPC_status_9
+    return completed_data, Full_status_error, Full_status_9, SW_status_9
 
 def extract_run_params(data):
     algo = []
@@ -116,7 +116,7 @@ def extract_run_params(data):
             numVeh.append(len(run['FCFS']))
         elif run['spec']['algo'] == 'full':
             numVeh.append(len(run['full']))
-        elif run['spec']['algo'] == 'mpc':
+        elif run['spec']['algo'] == 'SW':
             numVeh.append(len(run['sliding']))
         tau.append(run['spec']['tau'])
         rho.append(run['spec']['rho'])
@@ -183,7 +183,7 @@ def plot_unassigned(data):
     plt.figure()
     plt.scatter(FCFS_data_idx, FCFS_unassigned, label = 'FCFS')
     plt.scatter(full_data_idx, full_unassigned, label = 'Full')
-    plt.scatter(sliding_data_idx, sliding_unassigned, label = 'MPC')
+    plt.scatter(sliding_data_idx, sliding_unassigned, label = 'SW')
     plt.legend()
     # plt.xticks(range(min(x), max(x), 25))
     plt.xlabel('Vehicle Request Matrix')
@@ -192,23 +192,23 @@ def plot_unassigned(data):
     
     FCFS_full_df = pd.merge_ordered(FCFS_df, full_df, on = ['data_idx', 'numSpots', 'numVehicles'], how = 'inner', suffixes=['_FCFS', '_full'])
     FCFS_full_df['diff'] = FCFS_full_df['FCFS_unassigned'] - FCFS_full_df['full_unassigned']
-    #FCFS_MPC_df = FCFS_df.merge(sliding_df, how = 'inner', on = 'data_idx')
-    FCFS_MPC_df = pd.merge_ordered(FCFS_df, sliding_df, on = ['data_idx', 'numSpots', 'numVehicles'], how = 'inner', suffixes=['_FCFS', '_sliding'])
-    FCFS_MPC_df['diff'] = FCFS_MPC_df['FCFS_unassigned'] - FCFS_MPC_df['sliding_unassigned']
-    FCFS_MPC_df['demand'] = FCFS_MPC_df['numVehicles'] / FCFS_MPC_df['numSpots'] / 11
-    #MPC_full_df = sliding_df.merge(full_df, how = 'inner')
-    MPC_full_df = pd.merge_ordered(sliding_df, full_df, on = ['data_idx', 'numSpots', 'numVehicles'], how = 'inner', suffixes=['_sliding', '_full'])
-    MPC_full_df['diff'] = MPC_full_df['sliding_unassigned'] - MPC_full_df['full_unassigned']
+    #FCFS_SW_df = FCFS_df.merge(sliding_df, how = 'inner', on = 'data_idx')
+    FCFS_SW_df = pd.merge_ordered(FCFS_df, sliding_df, on = ['data_idx', 'numSpots', 'numVehicles'], how = 'inner', suffixes=['_FCFS', '_sliding'])
+    FCFS_SW_df['diff'] = FCFS_SW_df['FCFS_unassigned'] - FCFS_SW_df['sliding_unassigned']
+    FCFS_SW_df['demand'] = FCFS_SW_df['numVehicles'] / FCFS_SW_df['numSpots'] / 11
+    #SW_full_df = sliding_df.merge(full_df, how = 'inner')
+    SW_full_df = pd.merge_ordered(sliding_df, full_df, on = ['data_idx', 'numSpots', 'numVehicles'], how = 'inner', suffixes=['_sliding', '_full'])
+    SW_full_df['diff'] = SW_full_df['sliding_unassigned'] - SW_full_df['full_unassigned']
     
     
     # diff_FCFS_Full = np.subtract(FCFS_unassigned, Full_unassigned)
-    # diff_FCFS_MPC = np.subtract(FCFS_unassigned, MPC_unassigned)
-    # diff_MPC_Full = np.subtract(MPC_unassigned, Full_unassigned)
+    # diff_FCFS_SW = np.subtract(FCFS_unassigned, SW_unassigned)
+    # diff_SW_Full = np.subtract(SW_unassigned, Full_unassigned)
     
     plt.figure()
     plt.scatter(x = FCFS_full_df['data_idx'], y = FCFS_full_df['diff'], label = 'FCFS-Full')
-    plt.scatter(x = FCFS_MPC_df['data_idx'], y = FCFS_MPC_df['diff'], label = 'FCFS-MPC')
-    plt.scatter(x = MPC_full_df['data_idx'], y = MPC_full_df['diff'], label = 'MPC-Full')
+    plt.scatter(x = FCFS_SW_df['data_idx'], y = FCFS_SW_df['diff'], label = 'FCFS-SW')
+    plt.scatter(x = SW_full_df['data_idx'], y = SW_full_df['diff'], label = 'SW-Full')
     plt.legend()
     # plt.xticks(range(min(x), max(x), 25))
     plt.xlabel('Vehicle Request Matrix')
@@ -216,17 +216,17 @@ def plot_unassigned(data):
     plt.show()
     
 
-    return FCFS_df, full_df, sliding_df, FCFS_data, full_data, sliding_data, FCFS_full_df, FCFS_MPC_df, MPC_full_df
+    return FCFS_df, full_df, sliding_df, FCFS_data, full_data, sliding_data, FCFS_full_df, FCFS_SW_df, SW_full_df
 
 def get_analysis_data(run_params_complete, FCFS_unassigned, Full_unassigned,
-                                  MPC_unassigned, diff_FCFS_Full, diff_FCFS_MPC, diff_MPC_Full):
+                                  SW_unassigned, diff_FCFS_Full, diff_FCFS_SW, diff_SW_Full):
     analysis_data = run_params_complete
     analysis_data['FCFS unassigned'] = FCFS_unassigned
     analysis_data['Full unassigned'] = Full_unassigned
-    analysis_data['MPC unassigned'] = MPC_unassigned
+    analysis_data['SW unassigned'] = SW_unassigned
     analysis_data['diff_FCFS_Full'] = diff_FCFS_Full
-    analysis_data['diff_FCFS_MPC'] = diff_FCFS_MPC
-    analysis_data['diff_MPC_Full'] = diff_MPC_Full
+    analysis_data['diff_FCFS_SW'] = diff_FCFS_SW
+    analysis_data['diff_SW_Full'] = diff_SW_Full
     
     return analysis_data
 
@@ -287,19 +287,19 @@ def gen_boxplot(analysis_data, analysis_data_sub_2, analysis_data_sub_3, analysi
     Stage_1_data['Stage'] = 'Full Day'
 
     Stage_2_data = pd.DataFrame(columns = ['Stage', 'Diff Unassigned'])
-    Stage_2_data['Diff Unassigned'] = analysis_data_sub_2['diff_FCFS_MPC']
-    Stage_2_data['Stage'] = 'BFMPC'
+    Stage_2_data['Diff Unassigned'] = analysis_data_sub_2['diff_FCFS_SW']
+    Stage_2_data['Stage'] = 'BFSW'
 
     Stage_3_data = pd.DataFrame(columns = ['Stage', 'Diff Unassigned'])
-    Stage_3_data['Diff Unassigned'] = analysis_data_sub_3['diff_FCFS_MPC']
+    Stage_3_data['Diff Unassigned'] = analysis_data_sub_3['diff_FCFS_SW']
     Stage_3_data['Stage'] = 'SLT'
 
     Stage_4_data = pd.DataFrame(columns = ['Stage', 'Diff Unassigned'])
-    Stage_4_data['Diff Unassigned'] = analysis_data_sub_4['diff_FCFS_MPC']
+    Stage_4_data['Diff Unassigned'] = analysis_data_sub_4['diff_FCFS_SW']
     Stage_4_data['Stage'] = 'GP'
 
     Stage_5_data = pd.DataFrame(columns = ['Stage', 'Diff Unassigned'])
-    Stage_5_data['Diff Unassigned'] = analysis_data_sub_5['diff_FCFS_MPC']
+    Stage_5_data['Diff Unassigned'] = analysis_data_sub_5['diff_FCFS_SW']
     Stage_5_data['Stage'] = 'GAT'
 
     boxplot_data = pd.concat([Stage_1_data, Stage_2_data, Stage_3_data, Stage_4_data, Stage_5_data])
@@ -308,7 +308,7 @@ def gen_boxplot(analysis_data, analysis_data_sub_2, analysis_data_sub_3, analysi
     #boxplot for stage 1, full day versus FCFS
     plt.figure()
     sns.boxplot(data = boxplot_data, x = 'Stage', y = 'Diff Unassigned')
-    #plt.xticks(x = boxplot_data['Stage'], labels = ['Full Day', 'Best for MPC', '3', '4', '5'])
+    #plt.xticks(x = boxplot_data['Stage'], labels = ['Full Day', 'Best for SW', '3', '4', '5'])
     plt.ylim([-60, 420])
     plt.ylabel('Unassigned Minutes')
     plt.suptitle('Difference in Unassigned Parking Minutes')
@@ -654,8 +654,8 @@ def plot_contour(df, scenario):
     df_stepX = df[df['scenario_sliding'] == 'scenario '+str(i)]
     
     
-    #FCFS_MPC_df_stepX = FCFS_MPC_df[FCFS_MPC_df['scenario_sliding'] == 'scenario 4']
-    # #FCFS_MPC_df_step6['numVehicles'] = random.random()#FCFS_MPC_df_step6['sliding_numSpots']*11*2
+    #FCFS_SW_df_stepX = FCFS_SW_df[FCFS_SW_df['scenario_sliding'] == 'scenario 4']
+    # #FCFS_SW_df_step6['numVehicles'] = random.random()#FCFS_SW_df_step6['sliding_numSpots']*11*2
     fig = plt.figure(figsize = (6,4)) #winner
     ax = plt.tricontour(df_stepX['numSpots'], df_stepX['demand'], df_stepX['diff'], cmap = 'rainbow')
     cb = fig.colorbar(ax)
@@ -665,7 +665,7 @@ def plot_contour(df, scenario):
     plt.suptitle('Redux in double parking minutes')
     plt.title('(FCFS to Sliding Step ' +str(i) + ')')
 
-    # # plt.title('Reduction in Cruising, FCFS and MPC\n(minutes)')
+    # # plt.title('Reduction in Cruising, FCFS and SW\n(minutes)')
     # # plt.xlabel('Hourly Demand\n(Vehicles per Parking Space per Hour)')
     # # plt.xticks([1,2,3])
     # # plt.xlim([0.9, 3.1])
@@ -686,30 +686,40 @@ if __name__ == '__main__':
     run_2 = 'C:/Users/Aaron/Documents/GitHub/sliding_time_horizon_new/results/2024-01-11_Aaron Result_spaces_demand_23_sensi/*.dat'
     runs = [run_1, run_2]
     
+    # run_1 = 'C:/Users/Aaron/Documents/GitHub/sliding_time_horizon_new/results/2024-01-25_Aaron Result/*.dat'
+    # runs = [run_1]
+    
     compiled_data = []
     compiled_completed_data = []
+    compiled_Full_status_error = []
+    compiled_Full_status_9 = []
+    compiled_SW_status_9 = []
     for run in runs:
         file_path = run
         files = load_data(file_path)
         res = parse_data(files)
-        data, FullFailure_ls, MPCFailure_ls = del_incomplete_runs(res)
-        completed_data, Full_status_error, Full_status_9, MPC_status_9 = del_failed_runs(data)
+        data, FullFailure_ls, SWFailure_ls = del_incomplete_runs(res)
+        completed_data, Full_status_error, Full_status_9, SW_status_9 = del_failed_runs(data)
         
+        #add the current data to the data from the prior run
         compiled_data.extend(data)
         compiled_completed_data.extend(completed_data)
+        compiled_Full_status_error.extend(Full_status_error)
+        compiled_Full_status_9.extend(Full_status_9)
+        compiled_SW_status_9.extend(SW_status_9)
 
 
     run_params_OG = extract_run_params(compiled_data)
     run_params_complete = extract_run_params(compiled_completed_data)
 
-    ############ debug checks through graphics
-    FCFS_df, full_df, sliding_df, FCFS_data, full_data, sliding_data, FCFS_full_df, FCFS_MPC_df, MPC_full_df = plot_unassigned(compiled_completed_data)
+    # ############ debug checks through graphics
+    FCFS_df, full_df, sliding_df, FCFS_data, full_data, sliding_data, FCFS_full_df, FCFS_SW_df, SW_full_df = plot_unassigned(compiled_completed_data)
 
 
-    ############ Graphic generation
+    # ############ Graphic generation
     
-    #graphics exploring a range of parking spaces
-    #df, df_log = extract_plot_data_spaces(compiled_completed_data)
+    # #graphics exploring a range of parking spaces
+    # #df, df_log = extract_plot_data_spaces(compiled_completed_data)
     df, df_log = extract_plot_data_spaces_sensitivity(compiled_completed_data)
     
     for i in range(1,4):
@@ -718,22 +728,22 @@ if __name__ == '__main__':
     
     
     
-    #graphics exploring a range in demand
-    # df, df_log = extract_plot_data_demand(completed_data)
+    # #graphics exploring a range in demand
+    # # df, df_log = extract_plot_data_demand(completed_data)
     
-    # df, df_log = extract_plot_data_demand_sensitivity(completed_data)
+    # # df, df_log = extract_plot_data_demand_sensitivity(completed_data)
     
-    # gen_plots_demand(df)
-    # gen_plots_demand(df_log, log = True)
+    # # gen_plots_demand(df)
+    # # gen_plots_demand(df_log, log = True)
     
     
-    #plt.ylabel('redux unassigned minutes')
+    # #plt.ylabel('redux unassigned minutes')
 
 
-    ##contour plot stuff
+    # ##contour plot stuff
 
     for i in range(1,7):
-        plot_contour(FCFS_MPC_df, scenario = i)
+        plot_contour(FCFS_SW_df, scenario = i)
 
 
 

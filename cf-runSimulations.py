@@ -8,6 +8,8 @@ from copy import deepcopy
 import os
 from datetime import datetime, date
 import pandas as pd
+import warnings
+
 
 
 # def gen_vehicles_and_parameters(replications, numSpots, truckProps, nhts_data, 
@@ -91,36 +93,52 @@ def gen_vehicles_and_parameters(replications, numSpots, demands, truckProps, nht
                                 args.append(tempArg)
                                 i += 1
                                 print(i) 
-                                tempArg = ('mpc','scenario 2', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 60, 0, 0) #append scenario #2
+                                tempArg = ('SW','scenario 2', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 60, 0, 0) #append scenario #2
                                 args.append(tempArg)
                                 i += 1
                                 print(i) 
                             else:
-                                tempArg = ('mpc', 'scenario 3', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 60, 0, 0) #append scenario #3
+                                tempArg = ('SW', 'scenario 3', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 60, 0, 0) #append scenario #3
                                 args.append(tempArg)
                                 i += 1
                                 print(i) 
-                                tempArg = ('mpc', 'scenario 4', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 60, 15, 0) #append scenario #4
+                                tempArg = ('SW', 'scenario 4', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 60, 15, 0) #append scenario #4
                                 args.append(tempArg)
                                 i += 1
                                 print(i) 
-                                tempArg = ('mpc', 'scenario 5', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 60, 15, 15) #append scenario #5
+                                tempArg = ('SW', 'scenario 5', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 60, 15, 15) #append scenario #5
                                 args.append(tempArg)
                                 i += 1
                                 print(i) 
                                 
                                 r_i = np.subtract(tempData.loc[:,  'a_i_OG'], tempData.loc[:, 'Received'])
-                                tempArg = ('mpc', 'scenario 6', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 60, r_i, r_i) #append scenario #6
+                                tempArg = ('SW', 'scenario 6', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 60, r_i, r_i) #append scenario #6
                                 args.append(tempArg)
                                 i += 1
                                 print(i) 
                                 
-                                tempArg = ('mpc', 'scenario 7', numSpot, tempData, 5, 5, 1, 0, receivedDelta, i, j, 60, r_i, r_i) #append scenario #7
+                                tempArg = ('SW', 'scenario 7', numSpot, tempData, 5, 5, 1, 0, receivedDelta, i, j, 60, r_i, r_i) #append scenario #7
                                 args.append(tempArg)
                                 i += 1
                                 print(i) 
                                 
                         j += 1
+                        
+    current_date = date.today().strftime('%Y-%m-%d')                                            
+
+    if('connorforsythe' in os.getcwd()):
+        saveFile = '/Users/connorforsythe/Library/CloudStorage/Box-Box/CMU/SmartCurbs/Results/' + str(current_date) + '_Args.dat'
+        #current_date = 'Connor Result_'+current_date
+    else:
+        saveFile = 'C:/Users/Aaron/Documents/GitHub/sliding_time_horizon_new/results/' + str(current_date) + '_Args.dat'
+        #current_date = 'Aaron Result_' + current_date    
+
+
+    with open(saveFile, 'wb') as file:
+        pickle.dump(args, file)
+        file.close()
+    
+    return args
                                 
                             
 def gen_vehicles_and_parameters_sensitivity(replications, numSpots, demands, truckProps, nhts_data,
@@ -153,11 +171,11 @@ def gen_vehicles_and_parameters_sensitivity(replications, numSpots, demands, tru
                                 args.append(tempArg)
                                 i += 1
                                 print(i) 
-                                tempArg = ('mpc','scenario 1', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 60, 0, 0) #append scenario #1
+                                tempArg = ('SW','scenario 1', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 60, 0, 0) #append scenario #1
                                 args.append(tempArg)
                                 i += 1
                                 print(i) 
-                                tempArg = ('mpc','scenario 1a', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 30, 0, 0) #append scenario #1a, change tau to 30
+                                tempArg = ('SW','scenario 1a', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 30, 0, 0) #append scenario #1a, change tau to 30
                                 args.append(tempArg)
                                 i += 1
                                 print(i) 
@@ -166,65 +184,65 @@ def gen_vehicles_and_parameters_sensitivity(replications, numSpots, demands, tru
                                 tempData60 = apply_received_delta(baseData, 60)
                                 tempData15 = apply_received_delta(baseData, 15)
                                 
-                                tempArg = ('mpc', 'scenario 2', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 60, 0, 0) #append scenario #2
+                                tempArg = ('SW', 'scenario 2', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 60, 0, 0) #append scenario #2
                                 args.append(tempArg)
                                 i += 1
                                 print(i) 
-                                tempArg = ('mpc', 'scenario 2a', numSpot, tempData60, 0, 5, 1, 0, receivedDelta, i, j, 60, 0, 0) #append scenario #2a,tempData60
+                                tempArg = ('SW', 'scenario 2a', numSpot, tempData60, 0, 5, 1, 0, receivedDelta, i, j, 60, 0, 0) #append scenario #2a,tempData60
                                 args.append(tempArg)
                                 i += 1
                                 print(i) 
-                                tempArg = ('mpc', 'scenario 2b', numSpot, tempData15, 0, 5, 1, 0, receivedDelta, i, j, 60, 0, 0) #append scenario #2b, tempData15
-                                args.append(tempArg)
-                                i += 1
-                                print(i) 
-                                
-                                tempArg = ('mpc', 'scenario 3', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 60, 15, 0) #append scenario #3
-                                args.append(tempArg)
-                                i += 1
-                                print(i) 
-                                tempArg = ('mpc', 'scenario 3a', numSpot, tempData60, 0, 5, 1, 0, receivedDelta, i, j, 60, 15, 0) #append scenario #3
-                                args.append(tempArg)
-                                i += 1
-                                print(i) 
-                                tempArg = ('mpc', 'scenario 3b', numSpot, tempData15, 0, 5, 1, 0, receivedDelta, i, j, 60, 15, 0) #append scenario #3
+                                tempArg = ('SW', 'scenario 2b', numSpot, tempData15, 0, 5, 1, 0, receivedDelta, i, j, 60, 0, 0) #append scenario #2b, tempData15
                                 args.append(tempArg)
                                 i += 1
                                 print(i) 
                                 
-                                tempArg = ('mpc', 'scenario 4', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 60, 15, 15) #append scenario #4
+                                tempArg = ('SW', 'scenario 3', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 60, 15, 0) #append scenario #3
                                 args.append(tempArg)
                                 i += 1
                                 print(i) 
-                                tempArg = ('mpc', 'scenario 4a', numSpot, tempData60, 0, 5, 1, 0, receivedDelta, i, j, 60, 15, 15) #append scenario #4
+                                tempArg = ('SW', 'scenario 3a', numSpot, tempData60, 0, 5, 1, 0, receivedDelta, i, j, 60, 15, 0) #append scenario #3
                                 args.append(tempArg)
                                 i += 1
                                 print(i) 
-                                tempArg = ('mpc', 'scenario 4b', numSpot, tempData15, 0, 5, 1, 0, receivedDelta, i, j, 60, 15, 15) #append scenario #4
+                                tempArg = ('SW', 'scenario 3b', numSpot, tempData15, 0, 5, 1, 0, receivedDelta, i, j, 60, 15, 0) #append scenario #3
+                                args.append(tempArg)
+                                i += 1
+                                print(i) 
+                                
+                                tempArg = ('SW', 'scenario 4', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 60, 15, 15) #append scenario #4
+                                args.append(tempArg)
+                                i += 1
+                                print(i) 
+                                tempArg = ('SW', 'scenario 4a', numSpot, tempData60, 0, 5, 1, 0, receivedDelta, i, j, 60, 15, 15) #append scenario #4
+                                args.append(tempArg)
+                                i += 1
+                                print(i) 
+                                tempArg = ('SW', 'scenario 4b', numSpot, tempData15, 0, 5, 1, 0, receivedDelta, i, j, 60, 15, 15) #append scenario #4
                                 args.append(tempArg)
                                 i += 1
                                 print(i) 
                                 
                                 r_i = np.subtract(tempData.loc[:,  'a_i_OG'], tempData.loc[:, 'Received'])
-                                tempArg = ('mpc', 'scenario 5', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 60, r_i, r_i) #append scenario #5
+                                tempArg = ('SW', 'scenario 5', numSpot, tempData, 0, 5, 1, 0, receivedDelta, i, j, 60, r_i, r_i) #append scenario #5
                                 args.append(tempArg)
                                 i += 1
                                 print(i) 
-                                tempArg = ('mpc', 'scenario 5a', numSpot, tempData60, 0, 5, 1, 0, receivedDelta, i, j, 60, r_i, r_i) #append scenario #5
+                                tempArg = ('SW', 'scenario 5a', numSpot, tempData60, 0, 5, 1, 0, receivedDelta, i, j, 60, r_i, r_i) #append scenario #5
                                 args.append(tempArg)
                                 i += 1
                                 print(i) 
                                 #do not need a scenarion 5b b/c r_i, pho, nu = 15 is covered by scenario 4b
                                 
-                                tempArg = ('mpc', 'scenario 6', numSpot, tempData, 5, 5, 1, 0, receivedDelta, i, j, 60, r_i, r_i) #append scenario #6
+                                tempArg = ('SW', 'scenario 6', numSpot, tempData, 5, 5, 1, 0, receivedDelta, i, j, 60, r_i, r_i) #append scenario #6
                                 args.append(tempArg)
                                 i += 1
                                 print(i) 
-                                tempArg = ('mpc', 'scenario 6a', numSpot, tempData60, 5, 5, 1, 0, receivedDelta, i, j, 60, r_i, r_i) #append scenario #6
+                                tempArg = ('SW', 'scenario 6a', numSpot, tempData60, 5, 5, 1, 0, receivedDelta, i, j, 60, r_i, r_i) #append scenario #6
                                 args.append(tempArg)
                                 i += 1
                                 print(i) 
-                                tempArg = ('mpc', 'scenario 6b', numSpot, tempData15, 5, 5, 1, 0, receivedDelta, i, j, 60, r_i, r_i) #append scenario #6
+                                tempArg = ('SW', 'scenario 6b', numSpot, tempData15, 5, 5, 1, 0, receivedDelta, i, j, 60, r_i, r_i) #append scenario #6
                                 args.append(tempArg)
                                 i += 1
                                 print(i) 
@@ -299,16 +317,19 @@ def apply_received_delta(data, received_delta):
     return r
 
 
-
+def initialize():
+    
+    return args
 
 if __name__ == '__main__':
+    warnings.filterwarnings("ignore")
 
     #numSpots = [1, 2, 5, 10, 25]
     #numSpots = [1, 2, 5, 10, 15, 20, 25]
     #demand = [1, 2, 3, 4, 7]
-    demand = [1]
-    numSpots = [1, 2, 5, 20, 50, 100]
-    numSpots = [1,20,100]
+    demand = [20]
+    #numSpots = [1, 2, 5, 20, 50, 100]
+    numSpots = [10]
     # totalNumVehicles = list(range(11,78,11))
     # totalNumVehicles = [405]
     #doubleParkWeights = range(0, 101,25)
@@ -351,7 +372,7 @@ if __name__ == '__main__':
         r = pool.starmap(runFullSetOfResults, args, chunksize=chunkSize)
         pool.close()
     
-    # #when the pooling isn't running do the below
+    #when the pooling isn't running do the below
     # scenario = 0
     # for arg in args:
     #     print('scenario: ' + str(scenario))
