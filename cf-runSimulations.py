@@ -2,8 +2,8 @@ from multiprocessing import Pool
 import multiprocessing as mp
 from cfImplementation import runFullSetOfResults, simulateData, load_nhts_data
 import numpy as np
-import pickle #added
-import glob #added
+import pickle 
+import glob
 from copy import deepcopy
 import os
 from datetime import datetime, date
@@ -11,56 +11,6 @@ import pandas as pd
 import warnings
 
 
-
-# def gen_vehicles_and_parameters(replications, numSpots, truckProps, nhts_data, 
-#                                 doubleParkWeights, tauValues, zetaValues, saveIndex=1):
-    
-#     args = []
-#     i = 0
-#     reps = range(replications)
-#     for rep in reps:
-#         for numSpot in numSpots:
-#             totalNumVehicles = list(range(11*numSpot, 34*numSpot, 11*numSpot))
-#             # totalNumVehicles = list(range(11, 78, 11))
-#             for numVehicles in totalNumVehicles:
-#                 # numTrucks = list(range(1*numSpot, numVehicles*numSpot, 10*numSpot))
-
-#                 for truckProp in truckProps:
-#                     numTruck = int(np.round(truckProp*numVehicles))
-#                     numCar = numVehicles-numTruck
-#                     tempData = simulateData(min(max(numCar, 0), numVehicles), min(max(numTruck, 0), numVehicles), nhts_data)
-#                     #args = []
-#                     for doubleParkWeight in doubleParkWeights:
-#                         cruisingWeight = 100-doubleParkWeight
-#                         for tauValue in tauValues:
-#                             for bufferValue in bufferValues:
-#                                 for zetaValue in zetaValues:
-#                                     #tempArg = (numSpot, tempData, bufferValue, zetaValue, doubleParkWeight, cruisingWeight, i, tauValue)
-#                                     tempArg = {'numSpot': numSpot, 
-#                                                     'tempData': tempData, 
-#                                                     'bufferValue': bufferValue, 
-#                                                     'zetaValue': zetaValue, 
-#                                                     'doubleParkWeight': doubleParkWeight, 
-#                                                     'cruisingWeight': cruisingWeight, 
-#                                                     'i': i, 
-#                                                     'tauValue': tauValue}
-                                    
-#                                     if (numSpot == 1 and doubleParkWeight == 100 and numVehicles == 77):
-#                                         args.append(tempArg)
-#                                     else:
-#                                         args.append(tempArg)
-#                                         pass
-#                                     i += 1
-#                                     print(i) 
-    
-    
-#     saveFile = 'AaronRes/Veh_and_Params.dat'.format(saveIndex)
-
-#     with open(saveFile, 'wb') as file:
-#         pickle.dump(args, file)
-#         file.close()
-    
-#     return args
 
 
 def gen_vehicles_and_parameters(replications, numSpots, demands, truckProps, nhts_data,
@@ -318,12 +268,6 @@ def apply_received_delta(data, received_delta):
 
 
 def initialize():
-    
-    return args
-
-if __name__ == '__main__':
-    warnings.filterwarnings("ignore")
-
     #numSpots = [1, 2, 5, 10, 25]
     #numSpots = [1, 2, 5, 10, 15, 20, 25]
     #demand = [1, 2, 3, 4, 7]
@@ -362,10 +306,24 @@ if __name__ == '__main__':
     # args = gen_vehicles_and_parameters_sensitivity(replications, numSpots, demand, truckProps, 
     #                                    nhts_data, receivedDeltas, doubleParkWeights, 
     #                                    tauValues, bufferValues, zetaValues, rhoValues, nuValues)
+    
+    return args
 
+if __name__ == '__main__':
+    warnings.filterwarnings("ignore")
+
+    args = initialize()  #comment out this line if ready to run on the supercomputer
+    
+    # #load the args that were generated previously
+    # if('forsythe' in os.getcwd()):
+    #     file = 'X'
+    # else:
+    #     file = 'C:/Users/Aaron/Documents/GitHub/sliding_time_horizon_new/results/2024-01-26_Args.dat'
+        
+    # files = glob.glob(file)
     
     numThreads = mp.cpu_count()-2
-    #numThreads = 2
+    #numThreads = 128
     chunkSize = max(int(len(args)/numThreads), 1)
     np.random.shuffle(args)
     with Pool(numThreads) as pool:
