@@ -767,7 +767,7 @@ def runFCFS(numSpots, data):
     # r = seq_curb(numSpots, data, (6 * 24))
 
 
-def runFullSetOfResults(algo, scenario, numSpots, data, buffer, zeta, weightDoubleParking, weightCruising, received_delta, saveIndex=0, dataIndex=0, tau=0, rho=0, nu=0):
+def runFullSetOfResults(algo, scenario, numSpots, data, phi, zeta, weightDoubleParking, weightCruising, received_delta, saveIndex=0, dataIndex=0, tau=0, rho=0, nu=0):
     # #ChatGPT generated code for more robust saving of results
     # # Determine the current date and format it
     current_date = date.today().strftime('%Y-%m-%d') 
