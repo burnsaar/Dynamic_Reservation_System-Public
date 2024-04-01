@@ -1,18 +1,18 @@
 import pandas as p
 import numpy as np
 from PSC_gen_double_park_classification import apply_double_park_classification, apply_potential_cruising_time
-from execute_v2_cf import run_optimization, deepcopy
+from PSC_execute_v2_cf import run_optimization, deepcopy
 from collections import OrderedDict
 import pickle
 from PSC_gen_veh_arrivals import gen_veh_arrivals as gen_truck_arrivals
 import os
 def load_raw_nhts_data(useCols=None):
-    # if('forsythe' in os.getcwd()):
-    #     file = '/Users/connorforsythe/Library/CloudStorage/Box-Box/CMU/Data/NHTS Data/2017-2022/trippub.csv'
-    # else:
-    #     file = 'C:/Users/Aaron/Documents/GitHub/sliding_time_window_data/Data/NHTS/csv/trippub.csv'
+    if('forsythe' in os.getcwd()):
+        file = '/Users/connorforsythe/Library/CloudStorage/Box-Box/CMU/Data/NHTS Data/2017-2022/trippub.csv'
+    else:
+        file = 'C:/Users/Aaron/Documents/GitHub/sliding_time_window_data/Data/NHTS/csv/trippub.csv'
     
-    file = 'trippib.csv'
+    #file = 'trippub.csv'
 
     if(useCols==None):
         data = p.read_csv(file)

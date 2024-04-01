@@ -227,6 +227,12 @@ def plot_unassigned(data):
 
     return FCFS_df, full_df, sliding_df, FCFS_data, full_data, sliding_data, FCFS_full_df, FCFS_SW_df, SW_full_df
 
+def plot_unassigned_ILP(data):
+    
+    
+    return
+
+
 def get_analysis_data(run_params_complete, FCFS_unassigned, Full_unassigned,
                                   SW_unassigned, diff_FCFS_Full, diff_FCFS_SW, diff_SW_Full):
     analysis_data = run_params_complete
@@ -823,7 +829,8 @@ if __name__ == '__main__':
     #run_1 = 'C:/Users/Aaron/Documents/GitHub/sliding_time_horizon_new/results/2024-02-22_Aaron Result_PSC_(full_43200_SW_900_iter_15)/*.dat'
     #run_1 = 'C:/Users/Aaron/Documents/GitHub/sliding_time_horizon_new/results/2024-03-03_Aaron Result_PSC_(full-1)/*.dat'
     #run_1 = 'C:/Users/Aaron/Documents/GitHub/sliding_time_horizon_new/results/2024-03-02_Aaron Results_2-6_iter30/*.dat'
-    run_1 = 'C:/Users/Aaron/Documents/GitHub/sliding_time_horizon_new/ILP_modelling_evo_testing_12 Mar_24/test runs/2024-03-12_Aaron Result_full_ILP_test/*.dat'
+    #run_1 = 'C:/Users/Aaron/Documents/GitHub/sliding_time_horizon_new/results/2024-03-12_Aaron Result_PSC_full_ILP_test/*.dat'
+    run_1 = 'C:/Users/Aaron/Documents/GitHub/sliding_time_horizon_new/results/2024-03-13_Aaron Results_ILP(10800)_SW(900)_iter30/*.dat'
     runs = [run_1]
     
     compiled_data = []
@@ -851,7 +858,7 @@ if __name__ == '__main__':
 
     # # ############ debug checks through graphics
     # FCFS_df, full_df, sliding_df, FCFS_data, full_data, sliding_data, FCFS_full_df, FCFS_SW_df, SW_full_df = plot_unassigned(compiled_completed_data)
-
+    plot_unassigned_ILP(compiled_completed_data)
 
     # # ############ Graphic generation
     

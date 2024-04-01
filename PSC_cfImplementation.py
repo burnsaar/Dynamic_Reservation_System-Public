@@ -14,6 +14,8 @@ import os
 import multiprocessing as mp
 # from execute_v2 import park_events_FCFS,runtime_FCFS
 from PSC_seq_arrival_new import seq_curb
+import PSC_AP as AP
+import PSC_genBids as genBids
 #This function creates a new instance of a Gurobi model with the name specified by the "name" argument
 def createGurobiModel(name='smartCurb'):
     m = gp.Model(name)
@@ -451,6 +453,7 @@ def runSlidingOptimization(data, numSpaces, zeta=5, start=0, stop=(24*60)+1, buf
     #r is a list that will store successive results over time
     #Data should be sorted by received so that constraints moving from one time
     #step to the next are not assigned to the wrong vehicles
+    
     if(np.mean(data.loc[:, 'Received'])<0):
         data = data.sort_values('Received_OG')
     else:
@@ -475,19 +478,37 @@ def runSlidingOptimization(data, numSpaces, zeta=5, start=0, stop=(24*60)+1, buf
                 #print(pastInfo)
                 indiciesToDrop.extend(pastInfo['indicesToDrop'])
         data = data.loc[~data.index.isin(indiciesToDrop), :]
-        data.loc[:, 'a_i_OG-tau'] = data.loc[:, 'a_i_OG']-tau
-        data.loc[:, 'a_i_OG-rho'] = data.loc[:, 'a_i_OG'] - rho
-        data.loc[:, 'a_i_OG-nu'] = data.loc[:, 'a_i_OG'] - nu
+        
         data.loc[:, 'tau'] = tau
-        data.loc[:, 'rho'] = rho
-        data.loc[:, 'nu'] = nu
         data.loc[:, 'zeta'] = zeta
+        
+        if 'rho' not in data.columns:
+            data = data.merge(rho, on='Vehicle')
+            data = data.merge(nu, on='Vehicle')
+        
+        data.loc[:, 'a_i_OG-tau'] = data.loc[:, 'a_i_OG'] - tau
+        data.loc[:, 'a_i_OG-rho'] = data.loc[:, 'a_i_OG'] - data.loc[:, 'rho']
+        data.loc[:, 'a_i_OG-nu'] = data.loc[:, 'a_i_OG'] - data.loc[:, 'nu']
+        
+        # data.loc[:, 'tau'] = tau
+        # data.loc[:, 'zeta'] = zeta
+        
+        # data = data.merge(rho, on='Vehicle')
+        # data = data.merge(nu, on='Vehicle')
+        # print('data = ')
+        # print(data)
+        
+        # data.loc[:, 'a_i_OG-tau'] = data.loc[:, 'a_i_OG'] - tau
+        # data.loc[:, 'a_i_OG-rho'] = data.loc[:, 'a_i_OG'] - data.loc[:, 'rho']
+        # data.loc[:, 'a_i_OG-nu'] = data.loc[:, 'a_i_OG'] - data.loc[:, 'nu']
+        
         tempData = data.loc[(data.loc[:, 'Received'] <= j)&(data.loc[:, 'a_i_OG'] <= (j+tau)), :]
         # tempData.sort_values(by = ['a_i_OG', 'Received'], ascending = [True, True], inplace = True) #Aaron added to address t_i indexing issue with hold over reservations
 
         if(len(tempData)>0): #
             #Create Model
             m = createGurobiModel()
+            m.Params.LogToConsole = 0
             m, t_i = createTimeVars(m, tempData)
             m, x_i_j = createFlowVars(m, tempData)
 
@@ -506,7 +527,8 @@ def runSlidingOptimization(data, numSpaces, zeta=5, start=0, stop=(24*60)+1, buf
             m, x_i_j = createSingleAssignmentConstraints(m, x_i_j, tempData)
             m, t_i, x_i_j = createTimeOverlapConstraints(m, t_i, x_i_j, tempData, buffer=buffer)
             m, t_i = createTimeWindowConstraints(m, t_i, tempData)
-            m = setModelParams(m, TimeLimit=timeLimit, MIPGap=0.01, ModelSense=GRB.MINIMIZE, Threads=1)
+            m = setModelParams(m, TimeLimit=timeLimit, MIPGap=0.01, Threads=1)  #setModelParams or #setParams #, ModelSense=GRB.MINIMIZE #update for 11.0 modelsense minimization is set = 1
+            #m.setParam("ModelSense", 1)
             doubleParkObj = getDoubleParkExpression(tempData, x_i_j)
             cruisingObj = getExpectedCruisingExpression(tempData, x_i_j) #Aaron changed data to tempData
             m = setModelObjectiveN(m, doubleParkObj, 0, 1, weightDoubleParking)
@@ -526,7 +548,7 @@ def runSlidingOptimization(data, numSpaces, zeta=5, start=0, stop=(24*60)+1, buf
                 print('stop')
                 print('{} Termination Code for Run {}'.format(m.status, saveID))
                 # printFullModel(m)
-                m.write('debug/debug run-{}-status code-{}.lp'.format(saveID, m.status))
+                #m.write('debug/debug run-{}-status code-{}.lp'.format(saveID, m.status)) #removed for PSC implementation
                 
                 # print("The model is infeasible; computing IIS")
                 # m.computeIIS()
@@ -690,7 +712,7 @@ def collateTimeWindowOutcomes(outcomeList):
     return outcomeList, r
 
 
-def simulateData(numCars, numTrucks, nhts_data, windowShift=10, receivedDelta=30):
+def simulateData(numCars, numTrucks, nhts_data, windowShift=0, receivedDelta=30):
     data = nhts_data
     r = OrderedDict()
     if(numCars==0):
@@ -767,7 +789,7 @@ def runFCFS(numSpots, data):
     # r = seq_curb(numSpots, data, (6 * 24))
 
 
-def runFullSetOfResults(algo, scenario, numSpots, data, buffer, zeta, weightDoubleParking, weightCruising, received_delta, saveIndex=0, dataIndex=0, tau=0, rho=0, nu=0):
+def runFullSetOfResults(algo, scenario, numSpots, data, phi, buffer, zeta, weightDoubleParking, weightCruising, received_delta, saveIndex=0, dataIndex=0, tau=0, rho=0, nu=0, rep=0):
     # #ChatGPT generated code for more robust saving of results
     # # Determine the current date and format it
     current_date = date.today().strftime('%Y-%m-%d') 
@@ -780,14 +802,15 @@ def runFullSetOfResults(algo, scenario, numSpots, data, buffer, zeta, weightDoub
     #     base_path = 'C:/Users/Aaron/Documents/GitHub/sliding_time_horizon_new/results'
     #     current_date = current_date + '_Aaron Result'
         
-    base_path = saveFile = '/ocean/projects/eng240001p/aburns3/'
-    current_date = current_date + '_Aaron Result'
+    #base_path = saveFile = '/ocean/projects/eng240001p/aburns3/'
+    base_path = saveFile = 'C:/Users/Aaron/Documents/GitHub/sliding_time_horizon_new/ILP_modelling_evo_testing_12 Mar_24/test runs/'
+    current_date = current_date + '_Aaron Result_SW(1800)_iter30_2a'
     
 
     # Create a folder with the formatted date if it doesn't exist
     folder_path = os.path.join(base_path, current_date)
-    if not os.path.exists(folder_path):
-        os.makedirs(folder_path)
+    #if not os.path.exists(folder_path):
+    #    os.makedirs(folder_path)
     
     
     r = {}
@@ -829,15 +852,36 @@ def runFullSetOfResults(algo, scenario, numSpots, data, buffer, zeta, weightDoub
         
         try:
             t2 = datetime.now()
-            r['full'] = runSlidingOptimization(fullData, numSpots, zeta=fullZeta, buffer=buffer, tau = fulltau, #Aaron added fulltau
-                                               weightDoubleParking=weightDoubleParking, weightCruising=weightCruising,
-                                               timeLimit=10)
+            print("t2 = " + str(t2))
+            # r['full'] = runSlidingOptimization(fullData, numSpots, zeta=fullZeta, buffer=buffer, tau = fulltau, #Aaron added fulltau
+            #                                   weightDoubleParking=weightDoubleParking, weightCruising=weightCruising,
+            #                                   timeLimit=43200)
+            
+            #added to try to incorp the ILP for the full day optimal
+            print('full data = ')
+            #print(fullData)
+            for col in fullData.columns:
+                print(col)
+            print('num_trucks = ' + str(len(fullData)))
+            
+            bids = genBids.genBids(num_trucks=len(fullData), end=2400, Q=fullData, flex=0)
+            print('bids = ')
+            print(bids)
+            runtime, status, obj, dbl_park_Opt, park_demand, end_state_x_i_j, dbl_park_events, park_events = AP.AP(len(fullData), end=2400, Q=fullData, num_spaces=numSpots, bids=bids, flex=0, buffer=buffer, x_initialize=[None], timelimit=10800)
+            print('ILP Optimization Complete')
+            r['full'] = park_events
+            print('park events = ')
+            print(r['full'])
+            
+            
             t3 = datetime.now()
+            print("t3 = " + str(t3))
         except Exception as e:
             r['full'] = e
             
         try:
-            r['full-unassigned'] = getNumUnassignedMinutes(r['full'])
+            #r['full-unassigned'] = getNumUnassignedMinutes(r['full'])
+            r['full-unassigned'] = dbl_park_Opt
         except Exception as e:
             r['full-unassigned'] = e
         
@@ -855,14 +899,14 @@ def runFullSetOfResults(algo, scenario, numSpots, data, buffer, zeta, weightDoub
             t4 = datetime.now()
             r['sliding'] = runSlidingOptimization(deepcopy(data), numSpots, zeta=zeta, buffer=buffer,
                                                   weightDoubleParking=weightDoubleParking, weightCruising=weightCruising,
-                                                  timeLimit=1, tau=tau, returnBoth=False, saveID=saveIndex, rho=rho, nu=nu)
+                                                  timeLimit=1800, tau=tau, returnBoth=False, saveID=saveIndex, rho=rho, nu=nu)
             t5 = datetime.now()
         except Exception as e:
             r['sliding'] = e
             t4 = datetime.now()
             r['sliding'] = runSlidingOptimization(deepcopy(data), numSpots, zeta=zeta, buffer=buffer,
                                                   weightDoubleParking=weightDoubleParking, weightCruising=weightCruising,
-                                                  timeLimit=1, tau=tau, returnBoth=True, saveID=saveIndex, rho=rho, nu=nu)
+                                                  timeLimit=1800, tau=tau, returnBoth=True, saveID=saveIndex, rho=rho, nu=nu)
             t5 = datetime.now()
     
         try:
@@ -881,8 +925,8 @@ def runFullSetOfResults(algo, scenario, numSpots, data, buffer, zeta, weightDoub
         
         
             
-    r['spec'] = {'algo':algo, 'scenario': scenario, 'numSpots':numSpots, 'buffer':buffer, 'zeta':zeta, 'weightDoubleParking':weightDoubleParking, 'weightCruising':weightCruising,
-                 'tau':tau, 'numVehicles': len(data), 'rho': rho, 'nu': nu, 'received_delta': received_delta, 'run_index': saveIndex, 'data_index': dataIndex} 
+    r['spec'] = {'algo':algo, 'scenario': scenario, 'numSpots':numSpots, 'phi':phi, 'buffer':buffer, 'zeta':zeta, 'weightDoubleParking':weightDoubleParking, 'weightCruising':weightCruising,
+                 'tau':tau, 'numVehicles': len(data), 'rho': rho, 'nu': nu, 'received_delta': received_delta, 'run_index': saveIndex, 'data_index': dataIndex, 'rep': rep} 
 
 
 
