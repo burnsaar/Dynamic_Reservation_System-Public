@@ -13,7 +13,8 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 import datetime
-
+import matplotlib.colors
+import copy
 
 
 
@@ -239,10 +240,12 @@ def gen_plot_spaces_bar(df, demand, log=False):
     
     return
 
-def gen_plot_spaces_bar_norm(df, demand, log=False):
+def gen_plot_spaces_bar_norm(df, demand, log=False, mylabels=None):
     sns.set_palette('tab10')
     
     df = df[df['demand'] == demand]
+    
+    #df.drop(df[df['scenario'] == 'Baseline FCFS'].index, inplace=True) #added for the final results graphic, remove the FCFS data from the plot
     
     # plt.figure()
     # sns.barplot(data = df, x = 'numSpots', y = 'min_norm_hr_spaces', hue = 'scenario', errorbar='ci') #, err_style = 'bars'
@@ -252,12 +255,23 @@ def gen_plot_spaces_bar_norm(df, demand, log=False):
     # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     # plt.figure()
     
-    plt.figure()
-    sns.barplot(data = df, x = 'numSpots', y = 'redux_min_norm_hr_spaces', hue = 'scenario', errorbar='ci') #, err_style = 'bars'
-    plt.suptitle('Total Minutes of Double Parking Across Scenarios')
-    plt.title('Demand fixed at ' + str(demand) + ' vehicle per hr per space')
-    plt.ylabel('Unassigned minutes per hour per space')
+    colors = df[['scenario', 'color']].drop_duplicates().set_index('scenario').to_dict()
+    
+    fig, ax = plt.subplots()
+    sns.barplot(data = df, x = 'numSpots', y = 'redux_min_norm_hr_spaces', hue = 'scenario', palette = colors['color'], errorbar='ci') #, err_style = 'bars' , color=color, , color=color['color']
+    plt.suptitle('Reduction in Total Minutes of Double Parking Across Scenarios')
+    plt.title('(Demand set at ' + str(demand) + ' vehicle per hour per space)')
+    plt.ylabel('Reduction in Total Double Parking\n(minutes per hour per space)')
+    plt.xlabel('Number of Parking Spaces')
+    y_low, y_upper = ax.get_ylim()
+    plt.axhspan(y_low, 0, alpha = 0.1, zorder = 0, color='k', hatch='/')
+    #ax.text(0.2, -9, 'SW is Best', fontsize='x-large')
+    plt.axhline(y=0, color='k', linestyle='dashed')
+    
+    handles, previous_labels = ax.get_legend_handles_labels() #https://stackoverflow.com/questions/23037548/change-main-plot-legend-label-text
     plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    if mylabels != None:
+        plt.legend(title='Scenarios:', handles=handles, labels=mylabels, loc='center left', bbox_to_anchor=(0.25, -0.4))
     plt.figure()
 
     return
@@ -266,6 +280,7 @@ def gen_plot_demand_bar(df, spaces, log=False):
     sns.set_palette('tab10')
     
     df = df[df['numSpots'] == spaces]
+    
     
     plt.figure()
     sns.barplot(data = df, x = 'demand', y = 'unassigned', hue = 'scenario', errorbar='ci') #, err_style = 'bars'
@@ -276,10 +291,12 @@ def gen_plot_demand_bar(df, spaces, log=False):
     
     return
 
-def gen_plot_demand_bar_norm(df, spaces, log=False):
+def gen_plot_demand_bar_norm(df, spaces, log=False, mylabels=None):
     sns.set_palette('tab10')
     
     df = df[df['numSpots'] == spaces]
+    
+    #df.drop(df[df['scenario'] == 'Baseline FCFS'].index, inplace=True) #added for the final results graphic, remove the FCFS data from the plot
     
     # plt.figure()
     # sns.barplot(data = df, x = 'demand', y = 'min_norm_hr_spaces_demand', hue = 'scenario', errorbar='ci') #, err_style = 'bars'
@@ -290,13 +307,25 @@ def gen_plot_demand_bar_norm(df, spaces, log=False):
     # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     # plt.figure()
     
-    plt.figure()
-    sns.barplot(data = df, x = 'demand', y = 'redux_min_norm_hr_spaces_demand', hue = 'scenario', errorbar='ci') #, err_style = 'bars'
-    plt.suptitle('Total Minutes of Double Parking Across Scenarios')
-    plt.title('Parking spaces fixed at ' + str(spaces))
-    plt.ylabel('Unassigned minutes per hour per space per demand')
+    colors = df[['scenario', 'color']].drop_duplicates().set_index('scenario').to_dict()
+    #mylabels = ['1', '2', '3', '4', '5']
+    
+    fig, ax = plt.subplots()
+    sns.barplot(data = df, x = 'demand', y = 'redux_min_norm_hr_spaces_demand', hue = 'scenario', palette = colors['color'], errorbar='ci') #, err_style = 'bars'
+    plt.suptitle('Reduction in Total Minutes of Double Parking Across Scenarios')
+    plt.title('(Parking spaces set at ' + str(spaces) + ')')
+    plt.ylabel('Reduction in Total Double Parking\n(minutes per hour per space by demand)')
     plt.xlabel('Average number of vehicles per hour per space (demand)')
+    y_low, y_upper = ax.get_ylim()
+    plt.axhspan(0, y_low, alpha = 0.1, zorder = 0, color='k', hatch='/') #, hatch='/'
+    ax.text(1, 0.9, 'Reservation System Better', fontsize='x-large')
+    ax.text(1.5, -1.15, 'Status Quo Better', fontsize='x-large')
+    plt.axhline(y=0, color='k')
+    
+    handles, previous_labels = ax.get_legend_handles_labels() #https://stackoverflow.com/questions/23037548/change-main-plot-legend-label-text
     plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    if mylabels != None:
+        plt.legend(title = 'Scenarios:', handles=handles, labels=mylabels, loc='center left', bbox_to_anchor=(0.25, -0.4))
     plt.figure()
 
     return
@@ -322,7 +351,8 @@ if __name__ == '__main__':
     run_7 = 'C:/Users/Aaron/Documents/GitHub/sliding_time_horizon_new/results/2024-03-28_Aaron Result_SW(1800)_iter30_3_3a_3c_3d/*.dat'
     #run_7 = 'C:/Users/Aaron/Documents/GitHub/sliding_time_horizon_new/results/2024-03-29_Aaron Result_SW(3600)_iter30_3d/*.dat'
     run_8 = 'C:/Users/Aaron/Documents/GitHub/sliding_time_horizon_new/results/2024-03-28_Aaron Result_SW(1800)_iter30_2_2c/*.dat'
-    runs = [run_1, run_2, run_3, run_4, run_5, run_6, run_7, run_8]
+    run_9 = 'C:/Users/Aaron/Documents/GitHub/sliding_time_horizon_new/results/2024-04-11_Aaron Result_SW(3600)_iter30_FCFS_extra_space/*.dat'
+    runs = [run_1, run_2, run_3, run_4, run_5, run_6, run_7, run_8, run_9]
 
 
     
@@ -368,15 +398,20 @@ if __name__ == '__main__':
     #                                 'scenario 3', 'scenario 3b', 'scenario 3c',
     #                                 'scenario 4',
     #                                 'scenario 5', 'scenario 5a', 'scenario 5b', 'scenario 5c'])
-    matching_scenarios = pd.Series(['Baseline FCFS','scenario 1', 'scenario 2', 'scenario 3', 'scenario 4', 'scenario 5'])
-    #matching_scenarios = pd.Series(['Baseline FCFS', 'scenario 1', 'scenario 2a', 'scenario 3a', 'scenario 4a', 'scenario 5a'])
+    matching_scenarios = pd.Series(['Baseline FCFS','scenario 1', 'scenario 2', 'scenario 3', 'scenario 4', 'scenario 5'], name='scenario')
+    #matching_scenarios = pd.Series(['Baseline FCFS', 'scenario 1', 'scenario 2a', 'scenario 3a', 'scenario 4a', 'scenario 5a']) #not full reps
+    #matching_scenarios = pd.Series(['Baseline FCFS', 'scenario 1', 'scenario 3a', 'scenario 4a', 'scenario 5a']) #does have full reps
     #matching_scenarios = pd.Series(['Baseline FCFS', 'scenario 1', 'scenario 2b', 'scenario 3b', 'scenario 5b'])
     #matching_scenarios = pd.Series(['Baseline FCFS', 'scenario 1', 'scenario 2c', 'scenario 3c', 'scenario 5c'])
-    matching_scenarios = pd.Series(['Baseline FCFS', 'scenario 5', 'scenario 5a', 'scenario 5b', 'scenario 5c', 'scenario 5e'])
+    #matching_scenarios = pd.Series(['Baseline FCFS', 'scenario 5', 'scenario 5a', 'scenario 5b', 'scenario 5c', 'scenario 5e'])
     #matching_scenarios = pd.Series(['Baseline FCFS', 'scenario 2', 'scenario 2a', 'scenario 2b', 'scenario 2c'])
     #matching_scenarios = pd.Series(['Baseline FCFS', 'scenario 3', 'scenario 3a', 'scenario 3b', 'scenario 3c', 'scenario 3d'])
-    #matching_scenarios = pd.Series(['Baseline FCFS', 'scenario 4', 'scenario 4a', 'scenario 3b', 'scenario 3c', 'scenario 4d'])
+    #matching_scenarios = pd.Series(['Baseline FCFS', 'scenario 4', 'scenario 4a', 'scenario 3b', 'scenario 3c', 'scenario 4d']) #not full reps
     #matching_scenarios = pd.Series(['Baseline FCFS', 'scenario 4d'])
+    #matching_scenarios = pd.Series(['Baseline FCFS', 'scenario 1', 'scenario 2', 'scenario 3', 'scenario 4', 'scenario 5'])
+    # matching_scenarios = pd.Series(['Baseline FCFS', 'scenario 1', 'scenario 2', 'scenario 2b', 'scenario 2c', 'scenario 3',
+    #                                 'scenario 3a', 'scenario 3b', 'scenario 3c', 'scenario 4', 'scenario 4a',
+    #                                 'scenario 5', 'scenario 5a', 'scenario 5b', 'scenario 5c', 'scenario 5e'])
     
     completed_data_idx = subset_data_idx(run_params_complete, matching_scenarios) #get the data indexes that have data from all required scenarios for comparison
     compiled_completed_data_by_idx = subset_by_data_idx(run_params_complete, completed_data_idx) #subset to dataset to just these data points
@@ -389,37 +424,189 @@ if __name__ == '__main__':
     num_data_idx = len(compiled_completed_data_by_idx.data_idx.unique().tolist())  #how many data indexes are applied across the cases of interest
     print('num_data_idx = ' + str(num_data_idx))
     
+    
+    #add FCFS reduction and normalization columns
+    compiled_completed_data_by_idx = add_redux_cols(compiled_completed_data_by_idx)
+    compiled_completed_data_by_idx = add_norm_cols(compiled_completed_data_by_idx)
+    
+    
+
+    
+    
+    #add color codes to each of the scenarios                                                             
+    # compiled_completed_data_by_idx_colors = compiled_completed_data_by_idx[(compiled_completed_data_by_idx['scenario'] != 'Baseline FD') & 
+    #                                                                        (compiled_completed_data_by_idx['scenario'] != 'Baseline FCFS') &
+    #                                                                        (compiled_completed_data_by_idx['scenario'] != 'Baseline FCFS extra space')]
+    
+    compiled_completed_data_by_idx_colors = compiled_completed_data_by_idx[(compiled_completed_data_by_idx['scenario'] != 'Baseline FD')]
+    
+    unique_scenarios = pd.Series(compiled_completed_data_by_idx_colors['scenario'].unique(), name='scenario').sort_values().reset_index(drop=True)
+    unique_scenarios.drop([0,1], inplace=True) #remove 'Baseline FCFS' and 'Baseline FCFS extra space' from the unique scenarios list for color coding
+    unique_scenarios.reset_index(drop=True, inplace=True)
+    
+    colors = []
+    #[colors.append(matplotlib.colors.to_hex(plt.cm.tab20.colors[c])) for c in range(len(unique_scenarios))]
+    [colors.append(plt.cm.tab20.colors[c]) for c in range(len(unique_scenarios))]
+    colors = pd.Series(colors, name='color')
+    scenarios_to_colors = pd.concat([unique_scenarios, colors], axis=1)
+    
+    compiled_completed_data_by_idx_colors = compiled_completed_data_by_idx_colors.merge(scenarios_to_colors, on='scenario', how='left')
+                 
+    
+    
     #subset the compiled df to just include the matching scenarios of interest
-    df = create_final_df(compiled_completed_data_by_idx, matching_scenarios)
-    df = add_redux_cols(df)
-    df = add_norm_cols(df)
+    df = create_final_df(compiled_completed_data_by_idx_colors, matching_scenarios[matching_scenarios != 'Baseline FCFS'])
+    df['demand'] = pd.to_numeric(df['demand'],downcast='integer')
 
     
     
     #plot
+    
+    mylabels=None
+    #mylabels = matching_scenarios[matching_scenarios != 'Baseline FCFS']
+    # mylabels = ['1) Long Lead Time',
+    #             '2) Short Lead Time',
+    #             '3) 15min Guarantee',
+    #             '4) Immediate Guarantee',
+    #             '5) 5min Reservation Buffers']
+    # mylabels = ['1) Long Lead Time',
+    #             '3a) 15min Guarantee, \u03A6=10',
+    #             '4a) Immediate Guarantee, \u03A6=10',
+    #             '5a) 5min Reservation Buffers, \u03A6=10']
+    # mylabels = ['5) 5min Reservation Buffers', 
+    #             '5a) 5min Reservation Buffers, \u03A6=10', 
+    #             '5b) 5min Reservation Buffers, shorter lead time',
+    #             '5c) 5min Reservation Buffers, shortest lead time', 
+    #             '5e) 15min Reservation Buffers']
+    
+    
     # for i in range(1,5):
     #     gen_plot_spaces_bar(df, i)
     
     for i in range(1,5):
-        gen_plot_spaces_bar_norm(df, i)
+        gen_plot_spaces_bar_norm(df, i, mylabels=mylabels)
         
     # for i in [1,2,5,20,50]:
     #     gen_plot_demand_bar(df, i)
     
     for i in [1,2,5,20,50]:
-        gen_plot_demand_bar_norm(df, i)
+        gen_plot_demand_bar_norm(df, i, mylabels=mylabels)
+    
+    
+    
+    # #create a convert to smart curb add a parking space df
+    # df_ratio = copy.deepcopy(compiled_completed_data_by_idx_colors)
+    
+    # df_extra_space = df_ratio[df_ratio['scenario'] == 'Baseline FCFS extra space'][['data_idx', 'unassigned_x']]
+    # df_redux_extra_space = df_ratio.merge(df_extra_space, on='data_idx')
+    # df_redux_extra_space.rename(columns={'unassigned_x_x': 'unassigned_OG', 'unassigned_y': 'unassigned_FCFS', 'redux unassigned': 'unassigned_redux_to_FCFS', 'unassigned_x_y': 'unassigned_FCFS_extra_space'}, inplace=True)
+    # df_redux_extra_space['unassigned_redux_to_FCFS_extra_space'] = df_redux_extra_space['unassigned_OG'] - df_redux_extra_space['unassigned_FCFS_extra_space']
+    # df_redux_extra_space['redux_extra_min_norm_hr_spaces'] = df_redux_extra_space['unassigned_redux_to_FCFS_extra_space'] / 11 / df_redux_extra_space['numSpots'] #create normalization columns
+    # df_redux_extra_space['redux_extra_min_norm_hr_spaces_demand'] = df_redux_extra_space['unassigned_redux_to_FCFS_extra_space'] / 11 / df_redux_extra_space['numSpots'] / df_redux_extra_space['demand'] #create normalization columns
+    
+    # #collect the rows of data
+    # df_parking_expansion = df_redux_extra_space[df_redux_extra_space['scenario'] == 'Baseline FCFS'][['data_idx', 'unassigned_redux_to_FCFS_extra_space']]
+    # #comparison_cases = ['scenario 1']
+    # df_switch_to_smart_curb = df_redux_extra_space[(df_redux_extra_space['scenario'] == 'scenario 1') |
+    #                                                 (df_redux_extra_space['scenario'] == 'scenario 2') |
+    #                                                 (df_redux_extra_space['scenario'] == 'scenario 2b') |
+    #                                                 (df_redux_extra_space['scenario'] == 'scenario 2c') |
+    #                                                 (df_redux_extra_space['scenario'] == 'scenario 3') |
+    #                                                 (df_redux_extra_space['scenario'] == 'scenario 3a') |
+    #                                                 (df_redux_extra_space['scenario'] == 'scenario 3b') |
+    #                                                 (df_redux_extra_space['scenario'] == 'scenario 3c') |
+    #                                                 (df_redux_extra_space['scenario'] == 'scenario 4') |
+    #                                                 (df_redux_extra_space['scenario'] == 'scenario 4a') |
+    #                                                 (df_redux_extra_space['scenario'] == 'scenario 5') |
+    #                                                 (df_redux_extra_space['scenario'] == 'scenario 5a') |
+    #                                                 (df_redux_extra_space['scenario'] == 'scenario 5b') |
+    #                                                 (df_redux_extra_space['scenario'] == 'scenario 5c') |                                                   
+    #                                                 (df_redux_extra_space['scenario'] == 'scenario 5e')] #(df_redux_extra_space['scenario'] == 'scenario 4') |
+    
+    # df_switch_to_smart_curb = df_redux_extra_space[(df_redux_extra_space['scenario'] == 'scenario 1') |
+    #                                                 (df_redux_extra_space['scenario'] == 'scenario 2') |
+    #                                                 (df_redux_extra_space['scenario'] == 'scenario 3') |
+    #                                                 (df_redux_extra_space['scenario'] == 'scenario 4') |
+    #                                                 (df_redux_extra_space['scenario'] == 'scenario 5') ]
+    
+    # df_switch_to_smart_curb = df_redux_extra_space[(df_redux_extra_space['scenario'] == 'scenario 1') |
+    #                                                 (df_redux_extra_space['scenario'] == 'scenario 3a') |
+    #                                                 (df_redux_extra_space['scenario'] == 'scenario 4a') |
+    #                                                 (df_redux_extra_space['scenario'] == 'scenario 5a') ]
+    
+    # df_switch_to_smart_curb = df_redux_extra_space[(df_redux_extra_space['scenario'] == 'scenario 5') |
+    #                                                 (df_redux_extra_space['scenario'] == 'scenario 5a') |
+    #                                                 (df_redux_extra_space['scenario'] == 'scenario 5b') |
+    #                                                 (df_redux_extra_space['scenario'] == 'scenario 5c') |
+    #                                                 (df_redux_extra_space['scenario'] == 'scenario 5e') ]
+    
+    
+    # df_ratio_plot = df_switch_to_smart_curb.merge(df_parking_expansion, on='data_idx')
+    # df_ratio_plot.rename(columns={'unassigned_redux_to_FCFS_extra_space_y': 'unassigned_redux_FCFS_to_FCFS_extra_space'}, inplace=True)
+    # df_ratio_plot['redux ratio'] = df_ratio_plot['unassigned_redux_to_FCFS'] / df_ratio_plot['unassigned_redux_FCFS_to_FCFS_extra_space']
+    # df_ratio_plot.sort_values('scenario', inplace=True)
+    
+    # colors = df[['scenario', 'color']].drop_duplicates().set_index('scenario').to_dict()
+    
+    # plt.figure()
+    # sns.boxplot(x = 'demand', y = 'redux ratio', hue = 'scenario', data = df_ratio_plot, palette=colors['color'])
+    # plt.axhline(y = 1, xmin = 0, xmax = 6, linewidth=2, color='r', linestyle = '--')
+    # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    
+    # plt.figure()
+    # sns.boxplot(x = 'numSpots', y = 'redux ratio', hue = 'scenario', data = df_ratio_plot, palette=colors['color'])
+    # plt.axhline(y = 1, xmin = 0, xmax = 6, linewidth=2, color='r', linestyle = '--')
+    # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    
+    
+    # for i in range(1,5):
+    #     data = df_ratio_plot[df_ratio_plot['demand'] == i]
+        
+    #     fig, ax = plt.subplots()
+    #     sns.boxplot(x = 'numSpots', y = 'redux ratio', hue = 'scenario', data = data, palette=colors['color'])
+    #     plt.suptitle('Double Parking Reduction Ratio\n(Demand set at ' + str(i) + ' vehicles per hour per space)')
+    #     #plt.title('(Demand set at ' + str(i) + ' vehicles per hour per space)')
+    #     plt.axhline(y = 1, xmin = 0, xmax = 6, linewidth=2, color='r', linestyle = '--')
+    #     plt.ylabel('Double Parking Reduction Ratio\n(Redux Conversion / Redux Expansion)')
+    #     plt.xlabel('Number of Parking Spaces')
+    #     handles, previous_labels = ax.get_legend_handles_labels() #https://stackoverflow.com/questions/23037548/change-main-plot-legend-label-text
+    #     #plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    #     plt.legend(title = 'Scenarios:', handles=handles, labels=mylabels, loc='center left', bbox_to_anchor=(1, 0.5))
+    #     #plt.legend(loc='center left', bbox_to_anchor=(0, -1.25))
+    #     #plt.legend(title = 'Scenarios:', handles=handles, labels=mylabels, loc='center left', bbox_to_anchor=(1, 0.5))
+        
+    # for i in [1,2,5,20,50]:
+    #     data = df_ratio_plot[df_ratio_plot['numSpots'] == i]
+        
+    #     fig, ax = plt.subplots()
+    #     sns.boxplot(x = 'demand', y = 'redux ratio', hue = 'scenario', data = data, palette=colors['color'])
+    #     plt.suptitle('Double Parking Reduction Ratio\n(Parking Spaces set at ' + str(i) + ')')
+    #     #plt.title('(Parking Spaces set at ' + str(i) + ')')
+    #     plt.axhline(y = 1, xmin = 0, xmax = 6, linewidth=2, color='r', linestyle = '--')
+    #     plt.ylabel('Double Parking Reduction Ratio\n(Redux Conversion / Redux Expansion)')
+    #     plt.xlabel('Average number of vehicles per hour per space (demand)')
+    #     handles, previous_labels = ax.get_legend_handles_labels() #https://stackoverflow.com/questions/23037548/change-main-plot-legend-label-text
+    #     plt.legend(title = 'Scenarios:', handles=handles, labels=mylabels, loc='center left', bbox_to_anchor=(1, 0.5))
+    #     #plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    #     #plt.legend(loc='center left', bbox_to_anchor=(0, -1.25))
     
     
     
     
+    # colors = df[['scenario', 'color']].drop_duplicates().set_index('scenario').to_dict()
+    # #mylabels = ['1', '2', '3', '4', '5']
     
-    
-    
-    
-    
-    
-    
-    
+    # fig, ax = plt.subplots()
+    # sns.barplot(data = df, x = 'demand', y = 'redux_min_norm_hr_spaces_demand', hue = 'scenario', palette = colors['color'], errorbar='ci') #, err_style = 'bars'
+    # plt.suptitle('Reduction in Total Minutes of Double Parking Across Base Scenarios')
+    # plt.title('(Parking spaces set at ' + str(spaces) + ')')
+    # plt.ylabel('Reduction in Total Double Parking\n(minutes per hour per space by demand)')
+    # plt.xlabel('Average number of vehicles per hour per space (demand)')
+    # handles, previous_labels = ax.get_legend_handles_labels() #https://stackoverflow.com/questions/23037548/change-main-plot-legend-label-text
+    # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    # if mylabels != None:
+    #     plt.legend(title = 'Scenarios:', handles=handles, labels=mylabels, loc='center left', bbox_to_anchor=(1, 0.5))
+    # plt.figure()
     
     
     
