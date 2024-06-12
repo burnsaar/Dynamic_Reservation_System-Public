@@ -258,15 +258,17 @@ def gen_plot_spaces_bar_norm(df, demand, log=False, mylabels=None):
     colors = df[['scenario', 'color']].drop_duplicates().set_index('scenario').to_dict()
     
     fig, ax = plt.subplots()
-    sns.barplot(data = df, x = 'numSpots', y = 'redux_min_norm_hr_spaces', hue = 'scenario', palette = colors['color'], errorbar='ci') #, err_style = 'bars' , color=color, , color=color['color']
-    plt.suptitle('Reduction in Total Minutes of Double Parking Across Scenarios')
+    #sns.barplot(data = df, x = 'numSpots', y = 'redux_min_norm_hr_spaces', hue = 'scenario', palette = colors['color'], errorbar='ci') #, err_style = 'bars' , color=color, , color=color['color']
+    sns.barplot(data = df, x = 'numSpots', y = 'redux_min_norm_hr_spaces_demand', hue = 'scenario', palette = colors['color'], errorbar='ci') #, err_style = 'bars' , color=color, , color=color['color']
+    plt.suptitle('Change in Total Minutes of Parking Accommodation Across Scenarios')
     plt.title('(Demand set at ' + str(demand) + ' vehicle per hour per space)')
-    plt.ylabel('Reduction in Total Double Parking\n(minutes per hour per space)')
+    plt.ylabel('Change in Accommodation, FCFS to STW\n(minutes per hour per space by demand)')
     plt.xlabel('Number of Parking Spaces')
     y_low, y_upper = ax.get_ylim()
     plt.axhspan(y_low, 0, alpha = 0.1, zorder = 0, color='k', hatch='/')
-    #ax.text(0.2, -9, 'SW is Best', fontsize='x-large')
-    plt.axhline(y=0, color='k', linestyle='dashed')
+    #ax.text(1.9, 1, 'Reservation System Better', fontsize='large')
+    #ax.text(0.6, -4, 'Status Quo Better', fontsize='large')
+    plt.axhline(y=0, color='k')
     
     handles, previous_labels = ax.get_legend_handles_labels() #https://stackoverflow.com/questions/23037548/change-main-plot-legend-label-text
     plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
@@ -312,14 +314,14 @@ def gen_plot_demand_bar_norm(df, spaces, log=False, mylabels=None):
     
     fig, ax = plt.subplots()
     sns.barplot(data = df, x = 'demand', y = 'redux_min_norm_hr_spaces_demand', hue = 'scenario', palette = colors['color'], errorbar='ci') #, err_style = 'bars'
-    plt.suptitle('Reduction in Total Minutes of Double Parking Across Scenarios')
+    plt.suptitle('Change in Total Minutes of Parking Accommodation Across Scenarios')
     plt.title('(Parking spaces set at ' + str(spaces) + ')')
-    plt.ylabel('Reduction in Total Double Parking\n(minutes per hour per space by demand)')
+    plt.ylabel('Change in Accommodation, FCFS to STW\n(minutes per hour per space by demand)')
     plt.xlabel('Average number of vehicles per hour per space (demand)')
     y_low, y_upper = ax.get_ylim()
     plt.axhspan(0, y_low, alpha = 0.1, zorder = 0, color='k', hatch='/') #, hatch='/'
-    ax.text(1, 0.9, 'Reservation System Better', fontsize='x-large')
-    ax.text(1.5, -1.15, 'Status Quo Better', fontsize='x-large')
+    #ax.text(1.3, 0.9, 'Reservation System Better', fontsize= 'large')
+    #ax.text(1.7, -1.15, 'Status Quo Better', fontsize='large')
     plt.axhline(y=0, color='k')
     
     handles, previous_labels = ax.get_legend_handles_labels() #https://stackoverflow.com/questions/23037548/change-main-plot-legend-label-text
@@ -398,7 +400,7 @@ if __name__ == '__main__':
     #                                 'scenario 3', 'scenario 3b', 'scenario 3c',
     #                                 'scenario 4',
     #                                 'scenario 5', 'scenario 5a', 'scenario 5b', 'scenario 5c'])
-    matching_scenarios = pd.Series(['Baseline FCFS','scenario 1', 'scenario 2', 'scenario 3', 'scenario 4', 'scenario 5'], name='scenario')
+    #matching_scenarios = pd.Series(['Baseline FCFS','scenario 1', 'scenario 2', 'scenario 3', 'scenario 4', 'scenario 5'], name='scenario')
     #matching_scenarios = pd.Series(['Baseline FCFS', 'scenario 1', 'scenario 2a', 'scenario 3a', 'scenario 4a', 'scenario 5a']) #not full reps
     #matching_scenarios = pd.Series(['Baseline FCFS', 'scenario 1', 'scenario 3a', 'scenario 4a', 'scenario 5a']) #does have full reps
     #matching_scenarios = pd.Series(['Baseline FCFS', 'scenario 1', 'scenario 2b', 'scenario 3b', 'scenario 5b'])
@@ -409,9 +411,9 @@ if __name__ == '__main__':
     #matching_scenarios = pd.Series(['Baseline FCFS', 'scenario 4', 'scenario 4a', 'scenario 3b', 'scenario 3c', 'scenario 4d']) #not full reps
     #matching_scenarios = pd.Series(['Baseline FCFS', 'scenario 4d'])
     #matching_scenarios = pd.Series(['Baseline FCFS', 'scenario 1', 'scenario 2', 'scenario 3', 'scenario 4', 'scenario 5'])
-    # matching_scenarios = pd.Series(['Baseline FCFS', 'scenario 1', 'scenario 2', 'scenario 2b', 'scenario 2c', 'scenario 3',
-    #                                 'scenario 3a', 'scenario 3b', 'scenario 3c', 'scenario 4', 'scenario 4a',
-    #                                 'scenario 5', 'scenario 5a', 'scenario 5b', 'scenario 5c', 'scenario 5e'])
+    matching_scenarios = pd.Series(['Baseline FCFS', 'scenario 1', 'scenario 2', 'scenario 2b', 'scenario 2c', 'scenario 3',
+                                    'scenario 3a', 'scenario 3b', 'scenario 3c', 'scenario 4', 'scenario 4a',
+                                    'scenario 5', 'scenario 5a', 'scenario 5b', 'scenario 5c', 'scenario 5e'])
     
     completed_data_idx = subset_data_idx(run_params_complete, matching_scenarios) #get the data indexes that have data from all required scenarios for comparison
     compiled_completed_data_by_idx = subset_by_data_idx(run_params_complete, completed_data_idx) #subset to dataset to just these data points
