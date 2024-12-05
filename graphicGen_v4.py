@@ -275,15 +275,15 @@ def gen_plot_spaces_bar_norm(df, demand, log=False, mylabels=None):
     # ax.text(2, 2.9, 'Reservation System Better', fontsize='large')
     # ax.text(-0.2, -.7, 'First-Come First-Serve Better', fontsize='large')
     
-    ax.text(2, 0.9, 'Reservation System Better', fontsize='large')
-    ax.text(-0.2, -4, 'First-Come First-Serve Better', fontsize='large')
+    ax.text(2, 1.6, 'Reservation System Better', fontsize='large')
+    ax.text(-0.2, -2.6, 'First-Come First-Serve Better', fontsize='large')
     
     plt.axhline(y=0, color='k')
     
     handles, previous_labels = ax.get_legend_handles_labels() #https://stackoverflow.com/questions/23037548/change-main-plot-legend-label-text
     plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     if mylabels != None:
-        plt.legend(title='Scenarios:', handles=handles, labels=mylabels, loc='center left', bbox_to_anchor=(-0.1, -0.38))
+        plt.legend(title='Scenarios:', handles=handles, labels=mylabels, loc='center left', bbox_to_anchor=(1, 0.5)) #
         #plt.legend(title='Scenarios:', handles=handles, labels=mylabels, loc='center left', bbox_to_anchor=(0.05, -.36))
     plt.figure()
 
@@ -377,16 +377,19 @@ def gen_plot_demand_bar_norm(df, spaces, log=False, mylabels=None):
     plt.title('(Parking spaces set at ' + str(spaces) + ')')
     plt.ylabel('Change in Accommodation, FCFS to STW\n(minutes per hour per space by demand)')
     plt.xlabel('Average number of vehicles per hour per space (demand)')
+    
     y_low, y_upper = ax.get_ylim()
-    plt.axhspan(0, y_low, alpha = 0.1, zorder = 0, color='k', hatch='/') #, hatch='/'
-    #ax.text(1.3, 0.9, 'Reservation System Better', fontsize= 'large')
-    #ax.text(1.7, -1.15, 'Status Quo Better', fontsize='large')
+    plt.axhspan(y_low, 0, alpha = 0.1, zorder = 0, color='k', hatch='/') #, hatch='/'
+    plt.ylim(y_low, y_upper)
+    
+    ax.text(1.3, 1.6, 'Reservation System Better', fontsize= 'large')
+    ax.text(-0.23, -4.6, 'First-Come First-Serve Better', fontsize='large')
     plt.axhline(y=0, color='k')
     
     handles, previous_labels = ax.get_legend_handles_labels() #https://stackoverflow.com/questions/23037548/change-main-plot-legend-label-text
     plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     if mylabels != None:
-        plt.legend(title = 'Scenarios:', handles=handles, labels=mylabels, loc='center left', bbox_to_anchor=(0.25, -0.4))
+        plt.legend(title = 'Scenarios:', handles=handles, labels=mylabels, loc='center left', bbox_to_anchor=(1, 0.5))
     plt.figure()
 
     return
@@ -464,15 +467,15 @@ if __name__ == '__main__':
     #matching_scenarios = pd.Series(['Baseline FCFS', 'scenario 1', 'scenario 3a', 'scenario 4a', 'scenario 5a']) #does have full reps
     #matching_scenarios = pd.Series(['Baseline FCFS', 'scenario 1', 'scenario 2b', 'scenario 3b', 'scenario 5b'])
     #matching_scenarios = pd.Series(['Baseline FCFS', 'scenario 1', 'scenario 2c', 'scenario 3c', 'scenario 5c'])
-    matching_scenarios = pd.Series(['Baseline FCFS', 'scenario 5', 'scenario 5a', 'scenario 5b', 'scenario 5c', 'scenario 5e'])
+    #matching_scenarios = pd.Series(['Baseline FCFS', 'scenario 5', 'scenario 5a', 'scenario 5b', 'scenario 5c', 'scenario 5e'])
     #matching_scenarios = pd.Series(['Baseline FCFS', 'scenario 2', 'scenario 2a', 'scenario 2b', 'scenario 2c'])
     #matching_scenarios = pd.Series(['Baseline FCFS', 'scenario 3', 'scenario 3a', 'scenario 3b', 'scenario 3c', 'scenario 3d'])
     #matching_scenarios = pd.Series(['Baseline FCFS', 'scenario 4', 'scenario 4a', 'scenario 3b', 'scenario 3c', 'scenario 4d']) #not full reps
     #matching_scenarios = pd.Series(['Baseline FCFS', 'scenario 4d'])
     #matching_scenarios = pd.Series(['Baseline FCFS', 'scenario 1', 'scenario 2', 'scenario 3', 'scenario 4', 'scenario 5'])
-    # matching_scenarios = pd.Series(['Baseline FCFS', 'scenario 1', 'scenario 2', 'scenario 2b', 'scenario 2c', 'scenario 3',
-    #                                 'scenario 3a', 'scenario 3b', 'scenario 3c', 'scenario 4', 'scenario 4a',
-    #                                 'scenario 5', 'scenario 5a', 'scenario 5b', 'scenario 5c', 'scenario 5e'])
+    matching_scenarios = pd.Series(['Baseline FCFS', 'scenario 1', 'scenario 2', 'scenario 2b', 'scenario 2c', 'scenario 3',
+                                    'scenario 3a', 'scenario 3b', 'scenario 3c', 'scenario 4', 'scenario 4a',
+                                    'scenario 5', 'scenario 5a', 'scenario 5b', 'scenario 5c', 'scenario 5e'])
     
     completed_data_idx = subset_data_idx(run_params_complete, matching_scenarios) #get the data indexes that have data from all required scenarios for comparison
     compiled_completed_data_by_idx = subset_by_data_idx(run_params_complete, completed_data_idx) #subset to dataset to just these data points
@@ -534,11 +537,11 @@ if __name__ == '__main__':
     #             '3a) Guarantee Reservation with flexible arrival times',
     #             '4a) Immediate Guarantee with flexible arrival times',
     #             '5a) Reservation Buffer with flexible arrival times']
-    mylabels = ['5) Reservation Buffer',
-                '5a) Reservation Buffer with flexible arrival times',
-                '5b) Reservation Buffer and shorter lead time',
-                '5c) Reservation Buffer and shortest lead time and shortest time window',
-                '5e) Reservation Buffer with longer buffer']
+    # mylabels = ['5) Reservation Buffer',
+    #             '5a) Reservation Buffer with flexible arrival times',
+    #             '5b) Reservation Buffer and shorter lead time',
+    #             '5c) Reservation Buffer and shortest lead time and shortest time window',
+    #             '5e) Reservation Buffer with longer buffer']
     # mylabels = ['1) Long Lead Time',
     #             '3a) 15min Guarantee, \u03A6=10',
     #             '4a) Immediate Guarantee, \u03A6=10',
@@ -548,6 +551,21 @@ if __name__ == '__main__':
     #             '5b) 5min Reservation Buffers, shorter lead time',
     #             '5c) 5min Reservation Buffers, shortest lead time', 
     #             '5e) 15min Reservation Buffers']
+    mylabels = ['scenario 1',
+                'scenario 2',
+                'scenario 2b',
+                'scenario 2c',
+                'scenario 3',
+                'scenario 3a',
+                'scenario 3b',
+                'scenario 3c',
+                'scenario 4',
+                'scenario 4a',
+                'scenario 5',
+                'scenario 5a',
+                'scenario 5b',
+                'scenario 5c',
+                'scenario 5e']
     
     
     # gen_plot_base_case(df, 2, 5, mylabels=mylabels)
@@ -555,14 +573,14 @@ if __name__ == '__main__':
     # # for i in range(1,5):
     # #     gen_plot_spaces_bar(df, i)
     
-    for i in range(1,5):
-        gen_plot_spaces_bar_norm(df, i, mylabels=mylabels)
+    # for i in range(1,5):
+    #     gen_plot_spaces_bar_norm(df, i, mylabels=mylabels)
         
     # # for i in [1,2,5,20,50]:
     # #     gen_plot_demand_bar(df, i)
     
-    # for i in [1,2,5,20,50]:
-    #     gen_plot_demand_bar_norm(df, i, mylabels=mylabels)
+    for i in [1,2,5,20,50]:
+        gen_plot_demand_bar_norm(df, i, mylabels=mylabels)
     
     
     
