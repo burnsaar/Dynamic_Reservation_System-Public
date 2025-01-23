@@ -7,7 +7,6 @@ Data/NHTS/csv/vehpub.csv
 __pycache__/*
 *.dat
 *.lp
-debug/
 results/
 ILP_modelling_evo_testing_12 Mar_24/all_parking_context_data_9_April_2022.csv
 ILP_modelling_evo_testing_12 Mar_24/all_parking_data_9_April_2022.csv
